@@ -20,6 +20,7 @@ export function shouldIgnoreFile(filePath: string): boolean {
     /^out\//,
     /^\.git\//,
     /^\.vibeguard\//,
+    /test-librarian\.ts$/, // Ignore test script
     /\.(png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/i, // Binary assets
     /\.(exe|dll|so|dylib)$/i, // Compiled binaries
   ];

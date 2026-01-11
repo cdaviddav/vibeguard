@@ -38,6 +38,35 @@ export class GitUtils {
   }
 
   /**
+   * Get the diff between the last two commits (HEAD~1 and HEAD)
+   * This ensures we see the actual content of the most recent commit
+   */
+  async getLatestCommitDiff(): Promise<string> {
+    try {
+      const diff = await this.git.diff(['HEAD~1', 'HEAD']);
+      return diff;
+    } catch (error: any) {
+      // If there's only one commit, return empty diff
+      if (error.message?.includes('HEAD~1') || error.message?.includes('ambiguous argument')) {
+        return '';
+      }
+      throw new Error(`Failed to get latest commit diff: ${error.message || error}`);
+    }
+  }
+
+  /**
+   * Get unstaged changes (working directory diff)
+   */
+  async getUnstagedDiff(): Promise<string> {
+    try {
+      const diff = await this.git.diff();
+      return diff;
+    } catch (error: any) {
+      throw new Error(`Failed to get unstaged diff: ${error.message || error}`);
+    }
+  }
+
+  /**
    * Get oneline log (last N commits or since date)
    */
   async getOnelineLog(limit: number, since?: string): Promise<OnelineCommit[]> {

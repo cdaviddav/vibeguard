@@ -53,11 +53,36 @@ async function handleWatch() {
       const currentHead = await gitUtils.getHeadCommit();
       
       if (lastProcessed === currentHead) {
-        return; // Already processed
+        // No new commit, check for unstaged changes as draft memory
+        const unstagedDiff = await gitUtils.getUnstagedDiff();
+        if (unstagedDiff && unstagedDiff.trim().length > 0) {
+          console.log('No new commit, but unstaged changes detected. Creating draft memory...');
+          
+          // Read current memory
+          const currentMemory = await memoryManager.readMemory();
+          
+          // Prefix with draft note
+          const draftDiff = `## Draft Changes (Unstaged)\n\n${unstagedDiff}`;
+          
+          // Summarize and update
+          const updatedMemory = await summarizer.summarizeDiff(draftDiff, currentMemory, 'medium');
+          
+          // Write updated memory
+          await memoryManager.writeMemory(updatedMemory);
+          
+          console.log('✅ Draft memory updated successfully');
+        }
+        return; // Already processed or no changes
       }
 
-      // Get diff for the new commit
-      const diff = await gitUtils.getCommitDiff(currentHead);
+      // Get diff for the new commit using latest commit diff method
+      const diff = await gitUtils.getLatestCommitDiff();
+      
+      if (!diff || diff.trim().length === 0) {
+        console.log('No diff found for latest commit. Skipping...');
+        await watcher.setLastProcessedCommit(currentHead);
+        return;
+      }
       
       // Read current memory
       const currentMemory = await memoryManager.readMemory();
@@ -151,13 +176,41 @@ async function handleSync(deep: boolean = false) {
       const currentHead = await gitUtils.getHeadCommit();
       
       if (lastProcessed === currentHead) {
+        // No new commit, check for unstaged changes as draft memory
+        const unstagedDiff = await gitUtils.getUnstagedDiff();
+        if (unstagedDiff && unstagedDiff.trim().length > 0) {
+          console.log('No new commit, but unstaged changes detected. Creating draft memory...');
+          
+          // Read current memory
+          const currentMemory = await memoryManager.readMemory();
+          
+          // Prefix with draft note
+          const draftDiff = `## Draft Changes (Unstaged)\n\n${unstagedDiff}`;
+          
+          // Summarize and update
+          const updatedMemory = await summarizer.summarizeDiff(draftDiff, currentMemory, 'medium');
+          
+          // Write updated memory
+          await memoryManager.writeMemory(updatedMemory);
+          
+          console.log('✅ Draft memory sync complete!');
+          return;
+        }
         console.log('No new commits to process.');
         return;
       }
 
       console.log('Processing latest commit...');
       
-      const diff = await gitUtils.getCommitDiff(currentHead);
+      // Get diff for the new commit using latest commit diff method
+      const diff = await gitUtils.getLatestCommitDiff();
+      
+      if (!diff || diff.trim().length === 0) {
+        console.log('No diff found for latest commit. Updating state and skipping...');
+        await watcher.setLastProcessedCommit(currentHead);
+        return;
+      }
+      
       const currentMemory = await memoryManager.readMemory();
       
       const updatedMemory = await summarizer.summarizeDiff(diff, currentMemory, 'medium');

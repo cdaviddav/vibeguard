@@ -139,8 +139,8 @@ export class Watcher {
       persistent: true,
       ignoreInitial: true,
       awaitWriteFinish: {
-        stabilityThreshold: 200,
-        pollInterval: 100,
+        stabilityThreshold: 1000, // Increased to 1 second for slower file systems
+        pollInterval: 500, // Increased to 500ms to give Git operations time to finalize
       },
     });
 

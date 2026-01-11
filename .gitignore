@@ -26,3 +26,5 @@ Thumbs.db
 *.log
 npm-debug.log*
 
+# test files
+src/test-librarian.ts
