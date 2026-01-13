@@ -102,6 +102,6 @@ export async function getModel(): Promise<string> {
     return globalConfig.model;
   }
 
-  return 'gemini-2.0-flash-exp'; // Default
+  return 'gemini-3-flash-preview'; // Default
 }
 
