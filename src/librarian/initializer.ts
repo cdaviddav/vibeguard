@@ -55,13 +55,23 @@ export class Initializer {
   async tier1OnelineSweep(): Promise<MilestoneTimeline> {
     console.log('Tier 1: Analyzing commit history (oneline sweep)...');
 
-    // Get last 100 commits or last 6 months
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    const since = sixMonthsAgo.toISOString().split('T')[0];
+    try {
+      // Get last 100 commits or last 6 months
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      const since = sixMonthsAgo.toISOString().split('T')[0];
 
-    const commits = await this.gitUtils.getOnelineLog(100, since);
-    const milestones: MilestoneCommit[] = [];
+      const commits = await this.gitUtils.getOnelineLog(100, since);
+      
+      if (commits.length === 0) {
+        console.log('No commit history found. This appears to be a brand new repository.');
+        return {
+          milestones: [],
+          totalCommits: 0,
+        };
+      }
+      
+      const milestones: MilestoneCommit[] = [];
 
     // Keywords that indicate significant changes
     const significantKeywords = [
@@ -109,12 +119,21 @@ export class Initializer {
       }
     }
 
-    console.log(`Found ${milestones.length} milestone commits out of ${commits.length} total`);
+      console.log(`Found ${milestones.length} milestone commits out of ${commits.length} total`);
 
-    return {
-      milestones,
-      totalCommits: commits.length,
-    };
+      return {
+        milestones,
+        totalCommits: commits.length,
+      };
+    } catch (error: any) {
+      // Fallback for brand new repositories or Git errors
+      console.warn('Could not analyze commit history:', error.message || error);
+      console.log('Continuing with empty history...');
+      return {
+        milestones: [],
+        totalCommits: 0,
+      };
+    }
   }
 
   /**

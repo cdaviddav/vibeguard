@@ -1,4 +1,4 @@
-import simpleGit, { SimpleGit, LogResult, Commit } from 'simple-git';
+import simpleGit, { SimpleGit, LogResult } from 'simple-git';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -20,9 +20,9 @@ export class GitUtils {
   /**
    * Get the latest N commits
    */
-  async getLatestCommits(count: number): Promise<Commit[]> {
+  async getLatestCommits(count: number): Promise<LogResult['all']> {
     const log = await this.git.log({ maxCount: count });
-    return log.all;
+    return [...log.all]; // Convert readonly array to mutable array
   }
 
   /**
@@ -70,18 +70,60 @@ export class GitUtils {
    * Get oneline log (last N commits or since date)
    */
   async getOnelineLog(limit: number, since?: string): Promise<OnelineCommit[]> {
-    const options: any = { maxCount: limit, format: { hash: '%H', date: '%ai', message: '%s' } };
-    
-    if (since) {
-      options.since = since;
+    try {
+      const options: any = { 
+        maxCount: limit, 
+        format: { hash: '%H', date: '%ai', message: '%s' } 
+      };
+      
+      // Use --since with proper double-dash format
+      if (since) {
+        // simple-git should handle this, but we'll use raw command to ensure proper formatting
+        const logResult = await this.git.raw([
+          'log',
+          `--since=${since}`,
+          `-n${limit}`,
+          '--format=%H|%ai|%s'
+        ]);
+        
+        if (!logResult || logResult.trim().length === 0) {
+          return [];
+        }
+        
+        // Parse the raw output
+        const lines = logResult.trim().split('\n');
+        return lines.map(line => {
+          const [hash, date, ...messageParts] = line.split('|');
+          return {
+            hash: hash || '',
+            date: date || '',
+            message: messageParts.join('|') || '',
+          };
+        });
+      } else {
+        // No since date, use simple-git's log method
+        const log = await this.git.log(options);
+        return log.all.map(commit => ({
+          hash: commit.hash,
+          message: commit.message,
+          date: commit.date,
+        }));
+      }
+    } catch (error: any) {
+      // Handle brand new repositories or repositories with no commits
+      if (
+        error.message?.includes('does not have any commits yet') ||
+        error.message?.includes('not a git repository') ||
+        error.message?.includes('ambiguous argument') ||
+        error.message?.includes('bad revision')
+      ) {
+        console.warn('No Git history found or repository is brand new. Skipping commit history analysis.');
+        return [];
+      }
+      
+      // Re-throw other errors
+      throw new Error(`Failed to get oneline log: ${error.message || error}`);
     }
-
-    const log = await this.git.log(options);
-    return log.all.map(commit => ({
-      hash: commit.hash,
-      message: commit.message,
-      date: commit.date,
-    }));
   }
 
   /**
