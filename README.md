@@ -9,6 +9,20 @@ A context management tool for AI-assisted coding that watches Git history, captu
 - **High-Density Memory**: Maintains a concise "Single Source of Truth" for AI coding assistants
 - **Auto-Staging**: Keeps `PROJECT_MEMORY.md` in sync with your code
 - **Conflict Resolution**: Automatically merges Git conflicts using AI
+- **MCP Protocol Support**: Native Model Context Protocol (MCP) server for direct integration with Cursor, Claude Desktop, and other AI IDEs.
+
+
+## AI Assistant Integration
+VibeGuard provides an MCP server so your AI can "read" its own memory automatically.
+
+### Connecting to Cursor
+1. Go to **Cursor Settings > Features > MCP**.
+2. Add a new server:
+   - **Name**: VibeGuard
+   - **Type**: `command`
+   - **Command**: `npx tsx src/mcp-server.ts`
+
+
 
 ## Installation
 
@@ -141,6 +155,7 @@ npm start <command>
 vibeguard/
 ├── src/
 │   ├── index.ts                 # CLI entry point
+│   ├── mcp-server.ts            # MCP server for Cursor integration
 │   ├── librarian/
 │   │   ├── watcher.ts           # Git change detection
 │   │   ├── summarizer.ts        # Gemini integration

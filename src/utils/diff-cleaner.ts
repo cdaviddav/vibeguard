@@ -20,72 +20,11 @@ export function shouldIgnoreFile(filePath: string): boolean {
     /^out\//,
     /^\.git\//,
     /^\.vibeguard\//,
-    /test-librarian\.ts$/, // Ignore test script
     /\.(png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/i, // Binary assets
     /\.(exe|dll|so|dylib)$/i, // Compiled binaries
   ];
 
   return ignorePatterns.some(pattern => pattern.test(normalized));
-}
-
-/**
- * Check if a diff line represents a file that should be ignored
- */
-function isIgnoredFileLine(line: string): boolean {
-  // Git diff file headers: diff --git a/path b/path
-  // or: +++ b/path or --- a/path
-  const fileHeaderPatterns = [
-    /^diff --git a\/(.+)$/,
-    /^\+\+\+ b\/(.+)$/,
-    /^--- a\/(.+)$/,
-  ];
-
-  for (const pattern of fileHeaderPatterns) {
-    const match = line.match(pattern);
-    if (match && match[1]) {
-      return shouldIgnoreFile(match[1]);
-    }
-  }
-
-  return false;
-}
-
-/**
- * Check if a change is purely cosmetic (linting, comments, whitespace)
- */
-export function isCosmeticChange(diff: string): boolean {
-  const lines = diff.split('\n');
-  let hasCodeChanges = false;
-  let hasOnlyCosmetic = true;
-
-  for (const line of lines) {
-    // Skip context lines and file headers
-    if (line.startsWith('@@') || line.startsWith('diff') || 
-        line.startsWith('+++') || line.startsWith('---') ||
-        line.startsWith('index') || line.startsWith('---')) {
-      continue;
-    }
-
-    // Check for actual code changes (not just whitespace/comments)
-    if (line.startsWith('+') || line.startsWith('-')) {
-      const content = line.substring(1).trim();
-      
-      // Ignore pure whitespace changes
-      if (content.length === 0) continue;
-      
-      // Check if it's just a comment change
-      if (/^\/\/|\/\*|\*\/|#/.test(content) && content.length < 50) {
-        continue;
-      }
-
-      // If we get here, it's likely a real code change
-      hasCodeChanges = true;
-      hasOnlyCosmetic = false;
-      break;
-    }
-  }
-
-  return hasCodeChanges === false || hasOnlyCosmetic;
 }
 
 /**

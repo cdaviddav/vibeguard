@@ -254,5 +254,3 @@ export class Initializer {
     console.log('Initialization complete! PROJECT_MEMORY.md has been created/updated.');
   }
 }
-
-// testing the librarian

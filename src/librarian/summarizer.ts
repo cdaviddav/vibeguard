@@ -1,6 +1,6 @@
 import { generateSummary, estimateTokens } from '../utils/llm';
 import { cleanDiff } from '../utils/diff-cleaner';
-import { chunkDiff, aggregateSummaries } from '../utils/chunker';
+import { chunkDiff } from '../utils/chunker';
 import { getMaxTokens } from '../utils/config';
 
 /**

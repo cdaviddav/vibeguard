@@ -3,7 +3,6 @@ import * as path from 'path';
 import writeFileAtomic from 'write-file-atomic';
 import { GitUtils } from '../utils/git';
 import { generateSummary } from '../utils/llm';
-import { estimateTokens } from '../utils/llm';
 
 const MEMORY_FILE = 'PROJECT_MEMORY.md';
 const REQUIRED_SECTIONS = [

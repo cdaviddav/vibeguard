@@ -103,14 +103,3 @@ export async function generateSummary(
   throw new Error(`Failed to generate summary after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
 }
 
-/**
- * Generate with retry (alias for generateSummary)
- */
-export async function generateWithRetry(
-  prompt: string,
-  systemPrompt: string,
-  options: LLMOptions = {}
-): Promise<string> {
-  return generateSummary(prompt, systemPrompt, options);
-}
-

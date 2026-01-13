@@ -58,17 +58,6 @@ export async function loadGlobalConfig(): Promise<GlobalConfig | null> {
 }
 
 /**
- * Validate API key format (basic check)
- */
-export function validateApiKey(key: string): boolean {
-  if (!key || typeof key !== 'string') {
-    return false;
-  }
-  // Basic validation: should be non-empty and look like an API key
-  return key.trim().length > 0;
-}
-
-/**
  * Get max tokens from config (with fallback)
  */
 export async function getMaxTokens(): Promise<number> {

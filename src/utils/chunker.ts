@@ -137,25 +137,3 @@ export function chunkDiff(diff: string, maxTokens: number): string[] {
   return chunks.length > 0 ? chunks : [diff];
 }
 
-/**
- * Aggregate multiple summaries into a single architectural insights object
- * Note: Since The Librarian returns complete Markdown, we'll need to merge the Markdown files
- */
-export function aggregateSummaries(summaries: string[]): string {
-  if (summaries.length === 0) {
-    return '';
-  }
-
-  if (summaries.length === 1) {
-    return summaries[0];
-  }
-
-  // For multiple summaries, we need to merge the PROJECT_MEMORY.md files
-  // This is a simplified approach - in practice, The Librarian should handle this
-  // by processing all chunks together or using hierarchical summarization
-  
-  // For now, return the first summary and note that multiple chunks were processed
-  // The actual merging should be done by The Librarian prompt with all chunks
-  return summaries[0] + '\n\n<!-- Note: This summary was generated from multiple diff chunks -->';
-}
-
