@@ -168,6 +168,93 @@ export class MemoryManager {
   }
 
   /**
+   * Append content to a specific section in PROJECT_MEMORY.md
+   * If the section exists, appends the content under that header.
+   * If not, appends to the end of the file.
+   * Uses atomic writes for safety.
+   */
+  async appendToSection(section: string, content: string): Promise<void> {
+    // Normalize section name to match markdown header format (## Section Name)
+    let sectionHeader = section.trim();
+    if (!sectionHeader.startsWith('##')) {
+      sectionHeader = `## ${sectionHeader}`;
+    }
+
+    // Read current memory
+    let currentContent = await this.readMemory();
+    
+    // If file is empty, create basic structure
+    if (!currentContent || currentContent.trim().length === 0) {
+      currentContent = `# PROJECT_MEMORY.md\n\n${sectionHeader}\n\n`;
+    }
+
+    const lines = currentContent.split('\n');
+    const updatedLines: string[] = [];
+    let sectionFound = false;
+    let sectionIndex = -1;
+
+    // Find the section header (handle variations like "## Recent Decisions (The "Why")")
+    const normalizedSectionHeader = sectionHeader.replace(/^##\s+/, ''); // Remove ## prefix for comparison
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      // Match exact header or header with additional text in parentheses
+      if (line === sectionHeader || 
+          (line.startsWith('## ') && line.replace(/^##\s+/, '').split('(')[0].trim() === normalizedSectionHeader)) {
+        sectionFound = true;
+        sectionIndex = i;
+        break;
+      }
+    }
+
+    if (sectionFound && sectionIndex >= 0) {
+      // Section exists - append content after the header
+      for (let i = 0; i <= sectionIndex; i++) {
+        updatedLines.push(lines[i]);
+      }
+
+      // Find the end of the section (next ## header or end of file)
+      let insertIndex = sectionIndex + 1;
+      
+      // Skip blank lines after header
+      while (insertIndex < lines.length && lines[insertIndex].trim() === '') {
+        updatedLines.push(lines[insertIndex]);
+        insertIndex++;
+      }
+
+      // Add the new content with proper formatting
+      const formattedContent = content.trim();
+      if (formattedContent) {
+        updatedLines.push(formattedContent);
+        updatedLines.push(''); // Add blank line after content
+      }
+
+      // Add remaining lines
+      for (let i = insertIndex; i < lines.length; i++) {
+        updatedLines.push(lines[i]);
+      }
+    } else {
+      // Section doesn't exist - append to end
+      updatedLines.push(...lines);
+      if (lines[lines.length - 1] !== '') {
+        updatedLines.push(''); // Ensure blank line before new section
+      }
+      updatedLines.push(sectionHeader);
+      updatedLines.push(''); // Blank line after header
+      updatedLines.push(content.trim());
+    }
+
+    const updatedContent = updatedLines.join('\n');
+
+    // Write atomically
+    const memoryPath = this.getMemoryPath();
+    const compressed = this.compressIfNeeded(updatedContent);
+    await writeFileAtomic(memoryPath, compressed, 'utf-8');
+    
+    // Auto-stage the file
+    await this.stageMemoryFile();
+  }
+
+  /**
    * Resolve Git conflicts using Gemini
    */
   async resolveConflicts(conflictedContent: string): Promise<string> {

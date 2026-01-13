@@ -47,16 +47,20 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: 'update_project_memory',
         description:
-          "Updates the PROJECT_MEMORY.md file with new content. Validates required sections and uses atomic writes for safety.",
+          "Updates the PROJECT_MEMORY.md file by appending content to a specific section. If the section exists, appends the new content under that header. If not, appends it to the end of the file. Uses atomic writes for safety.",
         inputSchema: {
           type: 'object',
           properties: {
             content: {
               type: 'string',
-              description: 'The complete content of PROJECT_MEMORY.md to write. Must include all required sections: Project Soul, Tech Stack, Architecture, Core Rules, Recent Decisions, and Active Tech Debt.',
+              description: 'The text content to add to the section.',
+            },
+            section: {
+              type: 'string',
+              description: 'The section name where to add the content (e.g., "Recent Decisions", "Active Tech Debt"). Will match section headers like "## Recent Decisions".',
             },
           },
-          required: ['content'],
+          required: ['content', 'section'],
         },
       },
     ],
@@ -106,8 +110,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   if (name === 'update_project_memory') {
     try {
-      // Extract content parameter
+      // Extract content and section parameters
       const content = args?.content;
+      const section = args?.section;
       
       if (!content || typeof content !== 'string') {
         return {
@@ -121,18 +126,30 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      // Use MemoryManager.writeMemory() which handles:
+      if (!section || typeof section !== 'string') {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'Error: section parameter is required and must be a string.',
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      // Use MemoryManager.appendToSection() which handles:
+      // - Finding the section or appending to end
       // - Atomic writes via write-file-atomic
-      // - Validation of required sections
       // - Compression if needed
       // - Auto-staging in Git
-      await memoryManager.writeMemory(content);
+      await memoryManager.appendToSection(section, content);
 
       return {
         content: [
           {
             type: 'text',
-            text: 'Project Memory updated successfully.',
+            text: `Project Memory updated successfully. Content appended to section: ${section}`,
           },
         ],
       };
