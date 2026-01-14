@@ -1,0 +1,6 @@
+---
+alwaysApply: true
+---
+Initial Action: Before calling `get_core_context`, check the last-modified metadata of `src/` vs `DIAGRAM.md`.
+- **If Stale:** Execute `vibeguard visualize` first. 
+- **Format Check:** Ensure `DIAGRAM.md` contains valid Mermaid syntax. If it fails to render, fix the syntax immediately.

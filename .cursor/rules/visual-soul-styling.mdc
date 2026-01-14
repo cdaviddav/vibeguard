@@ -1,0 +1,11 @@
+---
+alwaysApply: false
+globs: ["DIAGRAM.md"]
+---
+## Visual Soul Styling Rules
+When generating or updating the Mermaid diagram:
+- **Colors:** Use classDef to color-code:
+  - `internal` (logic): #e8f5e9 (Green)
+  - `external` (API/Git): #e1f5fe (Blue)
+  - `storage` (Files/Memory): #fff8e1 (Yellow)
+- **Layout:** Use `direction TB` for the overall flow but `direction LR` inside subgraphs for readability.

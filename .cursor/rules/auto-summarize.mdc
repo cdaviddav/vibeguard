@@ -1,4 +1,6 @@
 ---
 alwaysApply: true
 ---
-At the end of every successful multi-step task, use the update_project_memory tool to briefly document the outcome and any new rules we established. Do not ask for permission; just do it as part of your cleanup routine.
+At the end of every successful multi-step task, use the `update_project_memory` tool.
+- **Logic:** Group related changes into a single "Atomic Update."
+- **Pruning Trigger:** If `Recent Decisions` exceeds 15 entries, summarize the oldest 5 into a single "Legacy Decisions" bullet point before adding new ones.
