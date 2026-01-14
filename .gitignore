@@ -26,4 +26,6 @@ Thumbs.db
 *.log
 npm-debug.log*
 
-# project memory
+# project memory
+src/PROJECT_MEMORY.md
+src/DIAGRAM.md
