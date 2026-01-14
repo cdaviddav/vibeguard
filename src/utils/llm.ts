@@ -24,6 +24,24 @@ async function initializeGemini(): Promise<GenerativeModel> {
   geminiClient = new GoogleGenerativeAI(apiKey);
   currentModel = geminiClient.getGenerativeModel({ 
     model: modelName,
+    safetySettings: [
+      {
+        category: 'HARM_CATEGORY_HARASSMENT' as any,
+        threshold: 'BLOCK_NONE' as any,
+      },
+      {
+        category: 'HARM_CATEGORY_HATE_SPEECH' as any,
+        threshold: 'BLOCK_NONE' as any,
+      },
+      {
+        category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT' as any,
+        threshold: 'BLOCK_NONE' as any,
+      },
+      {
+        category: 'HARM_CATEGORY_DANGEROUS_CONTENT' as any,
+        threshold: 'BLOCK_ONLY_HIGH' as any,
+      },
+    ],
   });
 
   return currentModel;
@@ -78,21 +96,43 @@ export async function generateSummary(
       });
 
       const response = result.response;
+      
+      // Check finishReason to understand why response might be empty
+      const candidates = response.candidates || [];
+      if (candidates.length > 0) {
+        const finishReason = candidates[0].finishReason;
+        if (finishReason === 'SAFETY') {
+          throw new Error('Response blocked by safety filters. Consider adjusting safety settings.');
+        }
+        if (finishReason && finishReason !== 'STOP') {
+          throw new Error(`Response finished with reason: ${finishReason}`);
+        }
+      }
+      
       const text = response.text();
 
       if (!text) {
-        throw new Error('Empty response from Gemini API');
+        // Provide more context about why the response might be empty
+        const finishReason = candidates[0]?.finishReason || 'UNKNOWN';
+        throw new Error(`Empty response from Gemini API (finishReason: ${finishReason})`);
       }
 
       return text;
     } catch (error: any) {
       lastError = error;
       
-      // Don't retry on certain errors (e.g., invalid API key)
-      if (error.message?.includes('API_KEY') || error.message?.includes('401')) {
+      // Don't retry on certain errors (e.g., invalid API key, safety blocks)
+      if (
+        error.message?.includes('API_KEY') || 
+        error.message?.includes('401') ||
+        error.message?.includes('403') ||
+        error.message?.includes('safety') ||
+        error.message?.includes('SAFETY') ||
+        error.message?.includes('blocked by safety')
+      ) {
         throw error;
       }
-
+      
       // Wait before retrying (except on last attempt)
       if (attempt < maxRetries - 1) {
         await new Promise(resolve => setTimeout(resolve, delays[attempt]));

@@ -13,7 +13,7 @@ VibeGuard is a context management tool that maintains a high-density "Single Sou
 - **Configuration:** dotenv (Hybrid strategy: Env > .env > Global JSON)
 
 ## Architecture
-VibeGuard operates as a pipeline: Git Watcher/CLI triggers -> Diff Pre-shredder (bloat removal) -> Gemini 3 Flash Summarizer (intent extraction) -> Memory Manager -> `PROJECT_MEMORY.md`. The system supports "Draft Memory" by summarizing unstaged changes in real-time and hosts an MCP Server to expose tools (`read_project_memory`, `update_project_memory`) for programmatic AI interaction. A three-tier initialization strategy (Log Sweep, Deep Context, Skeleton Scan) builds context for new repositories.
+VibeGuard operates as a pipeline: Git Watcher/CLI triggers -> Diff Pre-shredder (bloat removal) -> Gemini 3 Flash Summarizer (intent extraction) -> Memory Manager -> `PROJECT_MEMORY.md`. The system supports "Draft Memory" by summarizing unstaged changes in real-time and hosts an MCP Server to expose tools for programmatic AI interaction. Memory updates via MCP are granular, targeting specific markdown sections rather than overwriting the entire file to preserve context integrity and reduce token overhead.
 
 ## Core Rules
 - **Density over Detail:** Never list individual file changes; describe architectural intent and the "why."
@@ -22,13 +22,14 @@ VibeGuard operates as a pipeline: Git Watcher/CLI triggers -> Diff Pre-shredder 
 - **Atomic Persistence:** Use `write-file-atomic` to prevent corruption during concurrent processes or interrupted watchers.
 - **Temporal Awareness:** Always use 2026 for new entries; automatically migrate legacy 2024 references to 2026.
 - **Loop Prevention:** Explicitly ignore `.vibeguard` and `PROJECT_MEMORY.md` in file watchers.
+- **Auto-Summarization:** AI assistants must use the `update_project_memory` tool after every task to maintain real-time context without manual prompting.
 
 ## Recent Decisions (The "Why")
+- **Automated Memory Updates via Cursor Rules (14.01.2026):** Integrated a global Cursor rule (`.mdc`) that mandates AI assistants to update the project memory using MCP tools upon task completion. This removes manual documentation friction and ensures the "State of the World" is always current.
+- **Shifted MCP Memory Updates to Section-Based Appending (14.01.2026):** Replaced full-file overwrites with targeted section appending in the MCP server. This optimization reduces the risk of data loss during concurrent AI writes, lowers token consumption for updates, and allows the AI to contribute to specific logs without needing to process the entire document.
+- **Fixed Gemini API Safety Filter Handling (13.01.2026):** Resolved empty response errors in the check command by configuring safety settings at model initialization (BLOCK_NONE for harassment/hate speech/sexually explicit). Added finishReason validation to detect and report safety blocks.
+- **Added Check Command (13.01.2026):** Implemented `vibeguard check` command to verify environment setup, API key validity, Git repository status, and PROJECT_MEMORY.md existence. Provides a quick health check with colored status indicators.
 - **Implemented MCP Protocol Support (13.01.2026):** Added a native MCP server to allow AI IDEs (Cursor, Claude Desktop) to programmatically query and update project context without manual file interaction.
-- **Adopted Gemini 3 Flash (13.01.2026):** Selected as the primary engine for its high-speed processing and cost-effective handling of large architectural contexts during high-frequency diff processing.
-- **Integrated Pre-shredder & Chunker (13.01.2026):** Developed to handle massive diffs by stripping non-essential data and splitting payloads to fit LLM context windows, resolving previous "Deep Sync" token issues.
-- **Three-Tier Initialization Strategy (13.01.2026):** Created a tiered approach (Sweep, Deep Context, Skeleton Scan) to balance token costs and context depth when first analyzing a repository.
-- **Atomic Write Implementation (13.01.2026):** Switched to `write-file-atomic` to prevent `PROJECT_MEMORY.md` corruption during interrupted watch processes or concurrent writes.
 
 ## Active Tech Debt
 - **Conflict Resolution:** AI-driven merge logic for `PROJECT_MEMORY.md` requires more robust testing on complex branch rebase scenarios and multi-user environments.

@@ -5,12 +5,17 @@ import { Watcher } from './librarian/watcher';
 import { Summarizer } from './librarian/summarizer';
 import { MemoryManager } from './librarian/memory-manager';
 import { GitUtils } from './utils/git';
-import { getApiKey } from './utils/config';
+import { getApiKey, getModel } from './utils/config';
+import { generateSummary } from './utils/llm';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import simpleGit from 'simple-git';
 
 const COMMANDS = {
   INIT: 'init',
   WATCH: 'watch',
   SYNC: 'sync',
+  CHECK: 'check',
 } as const;
 
 async function setupServices() {
@@ -120,6 +125,115 @@ async function handleWatch() {
 
   // Keep process alive
   console.log('Watcher is running. Press Ctrl+C to stop.\n');
+}
+
+async function handleCheck() {
+  console.log('VibeGuard Health Check\n');
+  
+  const checks: Array<{ name: string; status: boolean; message: string }> = [];
+  
+  // Check 1: .env file exists and contains API key
+  try {
+    const envPath = path.join(process.cwd(), '.env');
+    try {
+      const envContent = await fs.readFile(envPath, 'utf-8');
+      // Check for GEMINI_API_KEY with more robust parsing
+      const lines = envContent.split('\n');
+      const apiKeyLine = lines.find(line => 
+        line.trim().startsWith('GEMINI_API_KEY=') && 
+        !line.trim().startsWith('#')
+      );
+      
+      if (apiKeyLine) {
+        // Extract value (handle quoted and unquoted values)
+        const value = apiKeyLine.split('=')[1]?.trim().replace(/^["']|["']$/g, '');
+        if (value && value.length > 0) {
+          checks.push({ name: 'Environment (.env)', status: true, message: '.env file exists with GEMINI_API_KEY' });
+        } else {
+          checks.push({ name: 'Environment (.env)', status: false, message: '.env file exists but GEMINI_API_KEY is empty' });
+        }
+      } else {
+        checks.push({ name: 'Environment (.env)', status: false, message: '.env file exists but GEMINI_API_KEY is missing' });
+      }
+    } catch (error) {
+      checks.push({ name: 'Environment (.env)', status: false, message: '.env file not found in project root' });
+    }
+  } catch (error) {
+    checks.push({ name: 'Environment (.env)', status: false, message: 'Error checking .env file' });
+  }
+  
+  // Check 2: API key is valid and active (test with minimal Gemini call)
+  try {
+    const apiKey = await getApiKey();
+    // Basic validation: API key should be non-empty and look valid
+    if (!apiKey || apiKey.trim().length === 0) {
+      checks.push({ name: 'Librarian Health (API Key)', status: false, message: 'API key is empty' });
+    } else {
+      // Test with minimal call - use a neutral prompt unlikely to trigger safety filters
+      try {
+        const model = await getModel();
+        await generateSummary('Say hello', 'You are a helpful assistant. Respond briefly.', { maxTokens: 1000 });
+        checks.push({ name: 'Librarian Health (API Key)', status: true, message: `API key is active (tested with ${model})` });
+      } catch (error: any) {
+        const errorMsg = error.message || 'Unknown error';
+        if (errorMsg.includes('API_KEY') || errorMsg.includes('401') || errorMsg.includes('403')) {
+          checks.push({ name: 'Librarian Health (API Key)', status: false, message: `API key is invalid or unauthorized: ${errorMsg}` });
+        } else {
+          checks.push({ name: 'Librarian Health (API Key)', status: false, message: `API test failed: ${errorMsg}` });
+        }
+      }
+    }
+  } catch (error: any) {
+    checks.push({ name: 'Librarian Health (API Key)', status: false, message: `API key not found: ${error.message || 'Unknown error'}` });
+  }
+  
+  // Check 3: Git repository
+  try {
+    const git = simpleGit(process.cwd());
+    const isRepo = await git.checkIsRepo();
+    if (isRepo) {
+      checks.push({ name: 'Git Status', status: true, message: 'Current directory is a Git repository' });
+    } else {
+      checks.push({ name: 'Git Status', status: false, message: 'Current directory is not a Git repository' });
+    }
+  } catch (error) {
+    checks.push({ name: 'Git Status', status: false, message: 'Error checking Git repository status' });
+  }
+  
+  // Check 4: PROJECT_MEMORY.md exists
+  try {
+    const memoryPath = path.join(process.cwd(), 'PROJECT_MEMORY.md');
+    try {
+      await fs.access(memoryPath);
+      checks.push({ name: 'PROJECT_MEMORY.md', status: true, message: 'PROJECT_MEMORY.md exists' });
+    } catch (error) {
+      checks.push({ name: 'PROJECT_MEMORY.md', status: false, message: 'PROJECT_MEMORY.md not found in project root' });
+    }
+  } catch (error) {
+    checks.push({ name: 'PROJECT_MEMORY.md', status: false, message: 'Error checking PROJECT_MEMORY.md' });
+  }
+  
+  // Print status report
+  console.log('Status Report:');
+  console.log('─'.repeat(60));
+  
+  for (const check of checks) {
+    const icon = check.status ? '✓' : '✗';
+    const colorCode = check.status ? '\x1b[32m' : '\x1b[31m'; // Green for success, red for failure
+    const resetCode = '\x1b[0m';
+    
+    console.log(`${colorCode}${icon}${resetCode} ${check.name.padEnd(30)} ${check.message}`);
+  }
+  
+  console.log('─'.repeat(60));
+  
+  const allPassed = checks.every(c => c.status);
+  if (allPassed) {
+    console.log('\n✅ All checks passed! VibeGuard is ready to use.');
+  } else {
+    console.log('\n⚠️  Some checks failed. Please review the issues above.');
+    process.exit(1);
+  }
 }
 
 async function handleSync(deep: boolean = false) {
@@ -239,6 +353,7 @@ Usage:
   vibeguard watch             Start watching for Git changes
   vibeguard sync              Process latest commit(s)
   vibeguard sync --deep       Process full Git history
+  vibeguard check             Run health check (env, API key, Git, memory)
 
 For more information, visit: https://github.com/cdaviddav/vibeguard
 `);
@@ -258,6 +373,10 @@ For more information, visit: https://github.com/cdaviddav/vibeguard
       case COMMANDS.SYNC:
         const deep = args.includes('--deep');
         await handleSync(deep);
+        break;
+
+      case COMMANDS.CHECK:
+        await handleCheck();
         break;
 
       default:
