@@ -257,8 +257,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         filePaths = ['PROJECT_MEMORY.md', 'package.json'];
       }
 
+      // Check if DIAGRAM.md exists and prepend it
+      const diagramPath = path.join(repoPath, 'DIAGRAM.md');
+      let diagramContent = '';
+      try {
+        diagramContent = await fs.readFile(diagramPath, 'utf-8');
+      } catch (error) {
+        // DIAGRAM.md doesn't exist - that's fine, continue without it
+      }
+
       // Read pinned files and build output
       const outputParts: string[] = ['# Pinned Project Context', ''];
+      
+      // Prepend DIAGRAM.md if it exists
+      if (diagramContent && diagramContent.trim().length > 0) {
+        outputParts.push('## Architecture Diagram', '');
+        outputParts.push(diagramContent);
+        outputParts.push('');
+        outputParts.push('---');
+        outputParts.push('');
+      }
+      
       const errors: string[] = [];
 
       for (const filePath of filePaths) {
