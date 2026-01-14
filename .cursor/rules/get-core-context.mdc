@@ -1,0 +1,4 @@
+---
+alwaysApply: true
+---
+Whenever starting a new feature or refactoring, ALWAYS call the get_core_context tool from the VibeGuard MCP server first. This ensures you are working with the latest Schema and Project Soul before writing any code.

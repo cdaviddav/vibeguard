@@ -12,6 +12,8 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { MemoryManager } from './librarian/memory-manager';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 // Create server instance
 const server = new Server(
@@ -29,6 +31,46 @@ const server = new Server(
 // Initialize memory manager
 const repoPath = process.cwd();
 const memoryManager = new MemoryManager(repoPath);
+
+/**
+ * Parse the Pinned Files section from PROJECT_MEMORY.md
+ * Returns an array of file paths, or null if section doesn't exist
+ */
+function parsePinnedFiles(memoryContent: string): string[] | null {
+  const lines = memoryContent.split('\n');
+  let inPinnedSection = false;
+  const filePaths: string[] = [];
+
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    
+    // Check if we've found the Pinned Files section
+    if (trimmedLine === '## Pinned Files') {
+      inPinnedSection = true;
+      continue;
+    }
+
+    // If we're in the section and hit another ## header, we're done
+    if (inPinnedSection && trimmedLine.startsWith('## ')) {
+      break;
+    }
+
+    // If we're in the section, collect non-empty lines as file paths
+    if (inPinnedSection) {
+      // Skip empty lines
+      if (trimmedLine.length === 0) {
+        continue;
+      }
+      // Extract path (remove list markers if present)
+      const filePath = trimmedLine.replace(/^[-*]\s+/, '').trim();
+      if (filePath.length > 0) {
+        filePaths.push(filePath);
+      }
+    }
+  }
+
+  return inPinnedSection ? filePaths : null;
+}
 
 // Register the read_project_memory tool
 server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -61,6 +103,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
           },
           required: ['content', 'section'],
+        },
+      },
+      {
+        name: 'get_core_context',
+        description:
+          "Reads pinned files from PROJECT_MEMORY.md's '## Pinned Files' section and returns their contents in a structured Markdown format. If the section doesn't exist, it will be created with default files (PROJECT_MEMORY.md and package.json).",
+        inputSchema: {
+          type: 'object',
+          properties: {},
+          required: [],
         },
       },
     ],
@@ -166,6 +218,107 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
   }
 
+  if (name === 'get_core_context') {
+    try {
+      // Read PROJECT_MEMORY.md
+      let memoryContent = await memoryManager.readMemory();
+
+      if (!memoryContent || memoryContent.trim().length === 0) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'PROJECT_MEMORY.md is empty or does not exist. Run `vibeguard init` to create it.',
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      // Parse pinned files section
+      let filePaths = parsePinnedFiles(memoryContent);
+
+      // If section doesn't exist, create it with defaults
+      if (filePaths === null) {
+        const defaultFiles = 'PROJECT_MEMORY.md\npackage.json';
+        await memoryManager.appendToSection('Pinned Files', defaultFiles);
+        // Re-read memory to get updated content
+        memoryContent = await memoryManager.readMemory();
+        filePaths = parsePinnedFiles(memoryContent);
+        
+        // If still null after creation, use defaults directly
+        if (filePaths === null) {
+          filePaths = ['PROJECT_MEMORY.md', 'package.json'];
+        }
+      }
+
+      // If no files found, use defaults
+      if (filePaths.length === 0) {
+        filePaths = ['PROJECT_MEMORY.md', 'package.json'];
+      }
+
+      // Read pinned files and build output
+      const outputParts: string[] = ['# Pinned Project Context', ''];
+      const errors: string[] = [];
+
+      for (const filePath of filePaths) {
+        try {
+          const fullPath = path.join(repoPath, filePath);
+          const fileContent = await fs.readFile(fullPath, 'utf-8');
+          
+          outputParts.push(`## File: ${filePath}`);
+          outputParts.push('');
+          outputParts.push(fileContent);
+          outputParts.push('');
+        } catch (error: any) {
+          // Handle file not found gracefully
+          if (error.code === 'ENOENT') {
+            errors.push(`File not found: ${filePath}`);
+            // Still add the section but with a note
+            outputParts.push(`## File: ${filePath}`);
+            outputParts.push('');
+            outputParts.push(`*File not found: ${filePath}*`);
+            outputParts.push('');
+          } else {
+            errors.push(`Error reading ${filePath}: ${error.message || error}`);
+          }
+        }
+      }
+
+      // Add errors at the end if any
+      if (errors.length > 0) {
+        outputParts.push('---');
+        outputParts.push('');
+        outputParts.push('## Errors');
+        outputParts.push('');
+        for (const error of errors) {
+          outputParts.push(`- ${error}`);
+        }
+      }
+
+      const output = outputParts.join('\n');
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: output,
+          },
+        ],
+      };
+    } catch (error: any) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error getting core context: ${error.message || error}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+
   throw new Error(`Unknown tool: ${name}`);
 });
 
@@ -178,7 +331,7 @@ async function main() {
   
   // Log to stderr (stdout is used for MCP protocol)
   console.error('VibeGuard MCP Server started');
-  console.error('Tools available: read_project_memory, update_project_memory');
+  console.error('Tools available: read_project_memory, update_project_memory, get_core_context');
   console.error('Waiting for MCP client connections...');
 }
 

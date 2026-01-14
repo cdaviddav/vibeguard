@@ -27,8 +27,8 @@ VibeGuard operates as a pipeline: Git Watcher/CLI triggers -> Diff Pre-shredder 
 ## Recent Decisions (The "Why")
 - **Automated Memory Updates via Cursor Rules (14.01.2026):** Integrated a global Cursor rule (`.mdc`) that mandates AI assistants to update the project memory using MCP tools upon task completion. This removes manual documentation friction and ensures the "State of the World" is always current.
 - **Shifted MCP Memory Updates to Section-Based Appending (14.01.2026):** Replaced full-file overwrites with targeted section appending in the MCP server. This optimization reduces the risk of data loss during concurrent AI writes, lowers token consumption for updates, and allows the AI to contribute to specific logs without needing to process the entire document.
-- **Fixed Gemini API Safety Filter Handling (13.01.2026):** Resolved empty response errors in the check command by configuring safety settings at model initialization (BLOCK_NONE for harassment/hate speech/sexually explicit). Added finishReason validation to detect and report safety blocks.
-- **Added Check Command (13.01.2026):** Implemented `vibeguard check` command to verify environment setup, API key validity, Git repository status, and PROJECT_MEMORY.md existence. Provides a quick health check with colored status indicators.
+- **Fixed Gemini API Safety Filter Handling (13.01.2026):** Resolved empty response errors by configuring safety settings to `BLOCK_NONE` for most categories and adding `finishReason` validation. This ensures the summarizer doesn't fail silently when encountering code that triggers overly sensitive default filters.
+- **Added Check Command (13.01.2026):** Implemented `vibeguard check` to provide a diagnostic health check of the environment, including `.env` validation, API key connectivity tests, Git repository status, and memory file existence.
 - **Implemented MCP Protocol Support (13.01.2026):** Added a native MCP server to allow AI IDEs (Cursor, Claude Desktop) to programmatically query and update project context without manual file interaction.
 
 ## Active Tech Debt
@@ -36,3 +36,8 @@ VibeGuard operates as a pipeline: Git Watcher/CLI triggers -> Diff Pre-shredder 
 - **MCP Search Tool:** The MCP server currently serves the entire memory file; needs a targeted "Search" tool for context retrieval in massive projects.
 - **Watcher Robustness:** Monitoring of `.git/HEAD` may miss changes during specific complex rebase scenarios or fast-forward merges.
 - **Skeleton Scan Depth:** Architecture inference is currently capped at a directory depth of 5 to prevent token exhaustion in large monorepos.
+
+## Pinned Files
+
+PROJECT_MEMORY.md
+package.json
