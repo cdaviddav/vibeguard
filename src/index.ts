@@ -125,13 +125,7 @@ async function handleWatch() {
   // Initialize watcher state with current HEAD if not set
   const currentHead = await gitUtils.getHeadCommit();
   const lastProcessed = await watcher.getLastProcessedCommit();
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/b84438ac-5444-41b2-87dd-53b7c6e4a93f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.ts:112',message:'Watcher initialization - checking state',data:{currentHead,lastProcessed},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
   if (!lastProcessed) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/b84438ac-5444-41b2-87dd-53b7c6e4a93f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.ts:115',message:'Initializing lastProcessedCommit to current HEAD',data:{currentHead},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
     await watcher.setLastProcessedCommit(currentHead);
   }
 

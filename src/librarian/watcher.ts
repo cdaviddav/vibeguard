@@ -54,34 +54,16 @@ export class Watcher {
    * Detect if there's a new commit
    */
   async detectNewCommit(): Promise<string | null> {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/b84438ac-5444-41b2-87dd-53b7c6e4a93f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'watcher.ts:56',message:'detectNewCommit entry',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
     try {
       const currentHead = await this.gitUtils.getHeadCommit();
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b84438ac-5444-41b2-87dd-53b7c6e4a93f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'watcher.ts:59',message:'getHeadCommit result',data:{currentHead},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       const state = await this.loadState();
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b84438ac-5444-41b2-87dd-53b7c6e4a93f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'watcher.ts:61',message:'loadState result',data:{lastProcessedCommit:state.lastProcessedCommit,isProcessing:state.isProcessing},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
 
       if (state.lastProcessedCommit === currentHead) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/b84438ac-5444-41b2-87dd-53b7c6e4a93f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'watcher.ts:64',message:'No new commit - state matches HEAD',data:{lastProcessedCommit:state.lastProcessedCommit,currentHead},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
         return null; // No new commit
       }
 
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b84438ac-5444-41b2-87dd-53b7c6e4a93f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'watcher.ts:68',message:'New commit detected',data:{lastProcessedCommit:state.lastProcessedCommit,currentHead},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       return currentHead;
-    } catch (error: any) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b84438ac-5444-41b2-87dd-53b7c6e4a93f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'watcher.ts:70',message:'Error in detectNewCommit',data:{error:error?.message||String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
+    } catch (error) {
       console.error('Error detecting new commit:', error);
       return null;
     }
@@ -91,24 +73,15 @@ export class Watcher {
    * Process a new commit (called by debounced handler)
    */
   private async processNewCommit(): Promise<void> {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/b84438ac-5444-41b2-87dd-53b7c6e4a93f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'watcher.ts:75',message:'processNewCommit entry',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
     const state = await this.loadState();
 
     // Prevent concurrent processing
     if (state.isProcessing) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b84438ac-5444-41b2-87dd-53b7c6e4a93f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'watcher.ts:79',message:'Already processing - skipping',data:{isProcessing:state.isProcessing},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
       return;
     }
 
     const newCommit = await this.detectNewCommit();
     if (!newCommit) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b84438ac-5444-41b2-87dd-53b7c6e4a93f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'watcher.ts:85',message:'No new commit detected in processNewCommit',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       return; // No new commit
     }
 
@@ -140,22 +113,13 @@ export class Watcher {
    * Debounced commit handler
    */
   private handleChange(): void {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/b84438ac-5444-41b2-87dd-53b7c6e4a93f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'watcher.ts:115',message:'handleChange called - file change detected',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-    // #endregion
     // Clear existing timer
     if (this.debounceTimer) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b84438ac-5444-41b2-87dd-53b7c6e4a93f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'watcher.ts:119',message:'Clearing existing debounce timer',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
       clearTimeout(this.debounceTimer);
     }
 
     // Set new timer
     this.debounceTimer = setTimeout(() => {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b84438ac-5444-41b2-87dd-53b7c6e4a93f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'watcher.ts:125',message:'Debounce timer fired - calling processNewCommit',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
       this.processNewCommit().catch(error => {
         console.error('Error in debounced commit handler:', error);
       });
@@ -169,9 +133,6 @@ export class Watcher {
     // Reset any stale processing flag on startup (in case watcher was interrupted)
     const state = await this.loadState();
     if (state.isProcessing) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b84438ac-5444-41b2-87dd-53b7c6e4a93f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'watcher.ts:168',message:'Resetting stale isProcessing flag',data:{wasProcessing:true},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'G'})}).catch(()=>{});
-      // #endregion
       await this.saveState({
         ...state,
         isProcessing: false,
@@ -186,10 +147,6 @@ export class Watcher {
     const currentBranch = await this.gitUtils.getCurrentBranch();
     const branchRefPath = path.join(gitPath, 'refs', 'heads', currentBranch);
 
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/b84438ac-5444-41b2-87dd-53b7c6e4a93f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'watcher.ts:168',message:'startWatching - paths being watched',data:{headPath,indexPath,branchRefPath,currentBranch,repoPath:this.repoPath},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'F'})}).catch(()=>{});
-    // #endregion
-
     // Watch HEAD, index, and the branch ref file (branch ref file changes on commits)
     const pathsToWatch = [headPath, indexPath, branchRefPath];
     this.watcher = chokidar.watch(pathsToWatch, {
@@ -202,17 +159,11 @@ export class Watcher {
       },
     });
 
-    this.watcher.on('change', (changedPath) => {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b84438ac-5444-41b2-87dd-53b7c6e4a93f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'watcher.ts:148',message:'chokidar change event fired',data:{changedPath},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-      // #endregion
+    this.watcher.on('change', () => {
       this.handleChange();
     });
 
     this.watcher.on('error', (error: any) => {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b84438ac-5444-41b2-87dd-53b7c6e4a93f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'watcher.ts:152',message:'chokidar error event',data:{error:error?.message||String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
       console.error('Watcher error:', error);
     });
 
