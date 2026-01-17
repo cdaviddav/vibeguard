@@ -7,6 +7,7 @@ import { MemoryManager } from './librarian/memory-manager';
 import { GitUtils } from './utils/git';
 import { getApiKey, getModel } from './utils/config';
 import { generateSummary } from './utils/llm';
+import { handleDashboard } from './commands/dashboard';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import simpleGit from 'simple-git';
@@ -17,6 +18,7 @@ const COMMANDS = {
   SYNC: 'sync',
   CHECK: 'check',
   VISUALIZE: 'visualize',
+  DASHBOARD: 'dashboard',
 } as const;
 
 async function setupServices() {
@@ -621,6 +623,7 @@ Usage:
   vibeguard sync --deep       Process full Git history
   vibeguard check             Run health check (env, API key, Git, memory)
   vibeguard visualize         Generate architecture diagram (DIAGRAM.md)
+  vibeguard dashboard         Start the VibeGuard dashboard server
 
 For more information, visit: https://github.com/cdaviddav/vibeguard
 `);
@@ -648,6 +651,10 @@ For more information, visit: https://github.com/cdaviddav/vibeguard
 
       case COMMANDS.VISUALIZE:
         await handleVisualize();
+        break;
+
+      case COMMANDS.DASHBOARD:
+        await handleDashboard();
         break;
 
       default:
