@@ -74,72 +74,6 @@ export class MemoryManager {
   }
 
   /**
-   * Compress memory if it exceeds 1,500 words
-   */
-  compressIfNeeded(content: string): string {
-    // Rough word count (split by whitespace)
-    const words = content.split(/\s+/).filter(w => w.length > 0);
-    
-    if (words.length <= 1500) {
-      return content;
-    }
-
-    // Need to compress - remove oldest "Recent Decisions"
-    const lines = content.split('\n');
-    const compressed: string[] = [];
-    let inRecentDecisions = false;
-    let decisionCount = 0;
-    const maxDecisions = 5; // Keep only last 5
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-
-      if (line.includes('## Recent Decisions')) {
-        inRecentDecisions = true;
-        compressed.push(line);
-        continue;
-      }
-
-      if (inRecentDecisions) {
-        // Check if we've moved to next section
-        if (line.startsWith('## ')) {
-          inRecentDecisions = false;
-          compressed.push(line);
-          continue;
-        }
-
-        // Count decisions (numbered items or date headers)
-        if (line.match(/^\d+\.|^\*\*.*:\*\*/)) {
-          decisionCount++;
-          if (decisionCount <= maxDecisions) {
-            // Keep this decision and its content
-            let j = i;
-            while (j < lines.length && !lines[j].match(/^\d+\.|^\*\*.*:\*\*|^## /)) {
-              if (j === i || lines[j].trim().length > 0) {
-                compressed.push(lines[j]);
-              }
-              j++;
-            }
-            i = j - 1;
-            continue;
-          }
-          // Skip this decision (too old)
-          let j = i + 1;
-          while (j < lines.length && !lines[j].match(/^\d+\.|^\*\*.*:\*\*|^## /)) {
-            j++;
-          }
-          i = j - 1;
-          continue;
-        }
-      }
-
-      compressed.push(line);
-    }
-
-    return compressed.join('\n');
-  }
-
-  /**
    * Write memory file atomically
    */
   async writeMemory(content: string): Promise<void> {
@@ -148,12 +82,9 @@ export class MemoryManager {
       throw new Error('Invalid PROJECT_MEMORY.md structure: missing required sections');
     }
 
-    // Compress if needed
-    const compressed = this.compressIfNeeded(content);
-
     // Write atomically
     const memoryPath = this.getMemoryPath();
-    await writeFileAtomic(memoryPath, compressed, 'utf-8');
+    await writeFileAtomic(memoryPath, content, 'utf-8');
 
     // Auto-stage the file
     await this.stageMemoryFile();
@@ -247,8 +178,7 @@ export class MemoryManager {
 
     // Write atomically
     const memoryPath = this.getMemoryPath();
-    const compressed = this.compressIfNeeded(updatedContent);
-    await writeFileAtomic(memoryPath, compressed, 'utf-8');
+    await writeFileAtomic(memoryPath, updatedContent, 'utf-8');
     
     // Auto-stage the file
     await this.stageMemoryFile();
@@ -273,7 +203,7 @@ Merge the following conflicted PROJECT_MEMORY.md file. The file contains Git con
    - ## Core Rules
    - ## Recent Decisions (The "Why")
    - ## Active Tech Debt
-4. Keep the file under 1,500 words
+4. Preserve all Recent Decisions entries; do not delete older entries during merge
 5. Return the complete, merged Markdown file with no conflict markers
 
 # CONFLICTED FILE
