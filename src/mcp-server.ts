@@ -315,6 +315,256 @@ CRITICAL REQUIREMENTS:
 }
 
 /**
+ * Parse entries from the Recent Decisions section
+ * Returns an array of entry strings (each entry may span multiple lines)
+ */
+function parseRecentDecisionsEntries(memoryContent: string): string[] {
+  const lines = memoryContent.split('\n');
+  const entries: string[] = [];
+  let inRecentDecisions = false;
+  let currentEntry: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmedLine = line.trim();
+
+    // Check if we've found the Recent Decisions section
+    if (trimmedLine.match(/^##\s+Recent\s+Decisions/i)) {
+      inRecentDecisions = true;
+      continue;
+    }
+
+    // If we're in the section and hit another ## header, we're done
+    if (inRecentDecisions && trimmedLine.match(/^##\s+/)) {
+      // Save last entry if exists
+      if (currentEntry.length > 0) {
+        entries.push(currentEntry.join('\n').trim());
+      }
+      break;
+    }
+
+    // If we're in the section, collect entries
+    if (inRecentDecisions) {
+      // Detect entry start: lines starting with "- **" or "**" (bullet point format)
+      const isEntryStart = /^\s*[-*]\s+\*\*/.test(line) || /^\s*\*\*/.test(line);
+      
+      if (isEntryStart) {
+        // Save previous entry if exists
+        if (currentEntry.length > 0) {
+          entries.push(currentEntry.join('\n').trim());
+        }
+        // Start new entry
+        currentEntry = [line];
+      } else if (currentEntry.length > 0 || trimmedLine.length > 0) {
+        // Continue current entry (or start if first non-empty line after header)
+        if (trimmedLine.length > 0 || currentEntry.length > 0) {
+          currentEntry.push(line);
+        }
+      }
+    }
+  }
+
+  // Save last entry if exists
+  if (inRecentDecisions && currentEntry.length > 0) {
+    entries.push(currentEntry.join('\n').trim());
+  }
+
+  return entries;
+}
+
+/**
+ * Remove the oldest N entries from Recent Decisions section
+ * Returns the modified content
+ */
+function removeOldestDecisions(memoryContent: string, countToRemove: number): string {
+  const lines = memoryContent.split('\n');
+  const result: string[] = [];
+  let inRecentDecisions = false;
+  let entryCount = 0;
+  let skipCount = 0;
+  let currentEntry: string[] = [];
+  let shouldSkipCurrentEntry = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmedLine = line.trim();
+
+    // Check if we've found the Recent Decisions section
+    if (trimmedLine.match(/^##\s+Recent\s+Decisions/i)) {
+      inRecentDecisions = true;
+      result.push(line);
+      continue;
+    }
+
+    // If we're in the section and hit another ## header, we're done
+    if (inRecentDecisions && trimmedLine.match(/^##\s+/)) {
+      // Don't add skipped entry
+      result.push(line);
+      inRecentDecisions = false;
+      continue;
+    }
+
+    // If we're in the section, process entries
+    if (inRecentDecisions) {
+      const isEntryStart = /^\s*[-*]\s+\*\*/.test(line) || /^\s*\*\*/.test(line);
+      
+      if (isEntryStart) {
+        // Process previous entry
+        if (currentEntry.length > 0) {
+          if (!shouldSkipCurrentEntry) {
+            result.push(...currentEntry);
+          }
+          currentEntry = [];
+        }
+
+        // Determine if we should skip this entry
+        entryCount++;
+        shouldSkipCurrentEntry = skipCount < countToRemove;
+        
+        if (shouldSkipCurrentEntry) {
+          skipCount++;
+        } else {
+          currentEntry.push(line);
+        }
+      } else {
+        // Continue current entry
+        if (!shouldSkipCurrentEntry) {
+          currentEntry.push(line);
+        }
+      }
+    } else {
+      // Not in Recent Decisions section, copy line as-is
+      result.push(line);
+    }
+  }
+
+  // Handle last entry if exists
+  if (inRecentDecisions && currentEntry.length > 0 && !shouldSkipCurrentEntry) {
+    result.push(...currentEntry);
+  }
+
+  return result.join('\n');
+}
+
+/**
+ * Perform memory compaction: summarize oldest 10 entries and move to Legacy Context
+ */
+async function performMemoryCompaction(memoryContent: string): Promise<string> {
+  // Extract all Recent Decisions entries
+  const entries = parseRecentDecisionsEntries(memoryContent);
+  
+  if (entries.length <= 10) {
+    return memoryContent; // Not enough entries to compact
+  }
+
+  // Get oldest 10 entries
+  const oldestEntries = entries.slice(0, 10);
+  const entriesText = oldestEntries.join('\n\n');
+
+  // Summarize using Gemini
+  const today = new Date().toLocaleDateString();
+  const summaryPrompt = `Summarize these 10 technical decisions into 3 concise bullet points for a section called 'Legacy Context'. Each bullet should capture the essential architectural or design decision, not individual file changes.
+
+Decisions to summarize:
+${entriesText}
+
+Requirements:
+- Output exactly 3 bullet points
+- Each bullet should start with "- "
+- Focus on architectural intent and "why" decisions were made
+- Keep each bullet concise (1-2 sentences max)
+- Use today's date (${today}) for any date references
+
+Output only the 3 bullet points, no additional text.`;
+
+  const systemPrompt = `You are an expert at summarizing technical decisions. You create concise, high-density summaries that preserve architectural intent.`;
+
+  try {
+    const summary = await generateSummary(summaryPrompt, systemPrompt, {
+      thinkingLevel: 'high',
+      maxTokens: 500,
+    });
+
+    // Extract bullet points from summary (clean up any markdown formatting)
+    let legacyBullets = summary.trim();
+    
+    // Ensure each line starts with "- " and is a bullet point
+    const bulletLines = legacyBullets
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .map(line => {
+        // If line doesn't start with "- ", add it
+        if (!line.startsWith('- ')) {
+          // Remove any existing markdown list markers
+          line = line.replace(/^[-*]\s*/, '');
+          return `- ${line}`;
+        }
+        return line;
+      });
+
+    // Ensure we have exactly 3 bullets (take first 3 if more)
+    const finalBullets = bulletLines.slice(0, 3).join('\n');
+
+    // Remove oldest 10 entries from Recent Decisions
+    let updatedContent = removeOldestDecisions(memoryContent, 10);
+
+    // Append to Legacy Context section (or create it)
+    // Check if Legacy Context section exists
+    const hasLegacySection = /^##\s+Legacy\s+Context/i.test(updatedContent);
+    
+    if (hasLegacySection) {
+      // First, write the content with removed entries
+      await memoryManager.writeMemory(updatedContent);
+      // Then append to existing Legacy Context section
+      await memoryManager.appendToSection('Legacy Context', finalBullets);
+      // Re-read to get final updated content
+      updatedContent = await memoryManager.readMemory();
+    } else {
+      // Create new Legacy Context section
+      const lines = updatedContent.split('\n');
+      // Find a good place to insert (after Active Tech Debt or at the end)
+      let insertIndex = lines.length;
+      
+      // Look for Active Tech Debt section
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].match(/^##\s+Active\s+Tech\s+Debt/i)) {
+          // Find the end of this section
+          for (let j = i + 1; j < lines.length; j++) {
+            if (lines[j].match(/^##\s+/)) {
+              insertIndex = j;
+              break;
+            }
+          }
+          break;
+        }
+      }
+
+      // Insert Legacy Context section
+      const beforeSection = lines.slice(0, insertIndex).join('\n');
+      const afterSection = lines.slice(insertIndex).join('\n');
+      
+      updatedContent = beforeSection + 
+        (beforeSection.endsWith('\n') ? '' : '\n') +
+        '\n## Legacy Context\n\n' +
+        finalBullets + '\n' +
+        (afterSection.startsWith('\n') ? '' : '\n') +
+        afterSection;
+
+      // Write the updated content (with removed entries and new Legacy Context section)
+      await memoryManager.writeMemory(updatedContent);
+      updatedContent = await memoryManager.readMemory();
+    }
+
+    return updatedContent;
+  } catch (error: any) {
+    // If summarization fails, log error but don't fail the update
+    console.error('Librarian: Error during memory compaction:', error.message || error);
+    return memoryContent; // Return original content if compaction fails
+  }
+}
+
+/**
  * Parse the Pinned Files section from PROJECT_MEMORY.md
  * Returns an array of file paths, or null if section doesn't exist
  */
@@ -470,6 +720,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           ],
           isError: true,
         };
+      }
+
+      // Memory Compaction Check: If updating "Recent Decisions", check if compaction is needed
+      const normalizedSection = section.trim().toLowerCase();
+      if (normalizedSection === 'recent decisions' || normalizedSection === 'recent decisions (the "why")') {
+        // Read current memory to check entry count
+        const currentMemory = await memoryManager.readMemory();
+        const entries = parseRecentDecisionsEntries(currentMemory);
+        
+        // If we have more than 15 entries, trigger compaction
+        if (entries.length > 15) {
+          console.error('Librarian: Compacting 10 old decisions into Legacy Context to save tokens.');
+          await performMemoryCompaction(currentMemory);
+        }
       }
 
       // Use MemoryManager.appendToSection() which handles:
