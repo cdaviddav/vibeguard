@@ -169,13 +169,18 @@ export class Watcher {
     const gitPath = path.join(this.repoPath, '.git');
     const headPath = path.join(gitPath, 'HEAD');
     const indexPath = path.join(gitPath, 'index');
+    
+    // Get current branch and watch the branch ref file (which actually changes on commits)
+    const currentBranch = await this.gitUtils.getCurrentBranch();
+    const branchRefPath = path.join(gitPath, 'refs', 'heads', currentBranch);
 
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/b84438ac-5444-41b2-87dd-53b7c6e4a93f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'watcher.ts:132',message:'startWatching - paths being watched',data:{headPath,indexPath,repoPath:this.repoPath},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/b84438ac-5444-41b2-87dd-53b7c6e4a93f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'watcher.ts:168',message:'startWatching - paths being watched',data:{headPath,indexPath,branchRefPath,currentBranch,repoPath:this.repoPath},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'F'})}).catch(()=>{});
     // #endregion
 
-    // Watch HEAD and index
-    this.watcher = chokidar.watch([headPath, indexPath], {
+    // Watch HEAD, index, and the branch ref file (branch ref file changes on commits)
+    const pathsToWatch = [headPath, indexPath, branchRefPath];
+    this.watcher = chokidar.watch(pathsToWatch, {
       persistent: true,
       ignoreInitial: true,
       ignored: [/\.vibeguard/, /PROJECT_MEMORY\.md/],

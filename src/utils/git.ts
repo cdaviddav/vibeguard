@@ -138,6 +138,29 @@ export class GitUtils {
   }
 
   /**
+   * Get current branch name
+   */
+  async getCurrentBranch(): Promise<string> {
+    try {
+      const branchSummary = await this.git.branch();
+      return branchSummary.current || 'main';
+    } catch (error: any) {
+      // Fallback: try to read .git/HEAD directly
+      try {
+        const headPath = path.join(this.repoPath, '.git', 'HEAD');
+        const headContent = await fs.readFile(headPath, 'utf-8');
+        const match = headContent.match(/ref:\s+refs\/heads\/(.+)/);
+        if (match && match[1]) {
+          return match[1].trim();
+        }
+      } catch {
+        // If all else fails, default to 'main'
+      }
+      return 'main';
+    }
+  }
+
+  /**
    * Get file structure as a tree-like string
    */
   async getFileStructure(): Promise<string> {
