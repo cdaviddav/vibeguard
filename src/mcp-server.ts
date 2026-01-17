@@ -12,6 +12,8 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { MemoryManager } from './librarian/memory-manager';
+import { generateSummary } from './utils/llm';
+import { getApiKey } from './utils/config';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -31,6 +33,286 @@ const server = new Server(
 // Initialize memory manager
 const repoPath = process.cwd();
 const memoryManager = new MemoryManager(repoPath);
+
+/**
+ * Recursively find the latest modified time of any file in a directory
+ */
+async function getLatestMTime(dir: string): Promise<Date | null> {
+  let latestMTime: Date | null = null;
+
+  async function walkDir(currentDir: string, depth: number = 0): Promise<void> {
+    if (depth > 10) return; // Limit depth to prevent infinite loops
+
+    try {
+      const entries = await fs.readdir(currentDir, { withFileTypes: true });
+
+      for (const entry of entries) {
+        const fullPath = path.join(currentDir, entry.name);
+
+        // Skip common ignore patterns
+        if (
+          entry.name.startsWith('.') ||
+          entry.name === 'node_modules' ||
+          entry.name === 'dist' ||
+          entry.name === 'build'
+        ) {
+          continue;
+        }
+
+        if (entry.isDirectory()) {
+          await walkDir(fullPath, depth + 1);
+        } else if (entry.isFile()) {
+          try {
+            const stats = await fs.stat(fullPath);
+            if (!latestMTime || stats.mtime > latestMTime) {
+              latestMTime = stats.mtime;
+            }
+          } catch (error) {
+            // Ignore permission errors or missing files
+          }
+        }
+      }
+    } catch (error) {
+      // Ignore permission errors
+    }
+  }
+
+  try {
+    await fs.access(dir);
+    await walkDir(dir);
+  } catch (error) {
+    return null;
+  }
+
+  return latestMTime;
+}
+
+/**
+ * Scan src/ directory and return file structure (for visualization)
+ */
+async function scanSrcDirectory(): Promise<string> {
+  const srcPath = path.join(repoPath, 'src');
+  const files: string[] = [];
+
+  async function walkDir(dir: string, prefix: string = '', depth: number = 0): Promise<void> {
+    if (depth > 10) return;
+
+    try {
+      const entries = await fs.readdir(dir, { withFileTypes: true });
+
+      const filtered = entries.filter(entry => {
+        const name = entry.name;
+        return (
+          !name.startsWith('.') &&
+          name !== 'node_modules' &&
+          name !== 'dist' &&
+          name !== 'build'
+        );
+      });
+
+      for (let i = 0; i < filtered.length; i++) {
+        const entry = filtered[i];
+        const isLast = i === filtered.length - 1;
+        const currentPrefix = isLast ? '└── ' : '├── ';
+        const nextPrefix = isLast ? '    ' : '│   ';
+
+        files.push(prefix + currentPrefix + entry.name);
+
+        if (entry.isDirectory()) {
+          const fullPath = path.join(dir, entry.name);
+          await walkDir(fullPath, prefix + nextPrefix, depth + 1);
+        }
+      }
+    } catch (error) {
+      // Ignore permission errors
+    }
+  }
+
+  try {
+    await fs.access(srcPath);
+    await walkDir(srcPath);
+  } catch (error) {
+    throw new Error('src/ directory not found. Make sure you are in the project root.');
+  }
+
+  return files.join('\n');
+}
+
+/**
+ * Validate Mermaid syntax - check for unclosed brackets
+ */
+function validateMermaidSyntax(mermaidCode: string): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  const mermaidMatch = mermaidCode.match(/```mermaid\n([\s\S]*?)```/);
+  if (!mermaidMatch) {
+    errors.push('No mermaid code block found');
+    return { valid: false, errors };
+  }
+
+  const code = mermaidMatch[1];
+
+  const bracketPairs: Array<{ open: string; close: string; name: string }> = [
+    { open: '[', close: ']', name: 'square brackets' },
+    { open: '(', close: ')', name: 'parentheses' },
+    { open: '{', close: '}', name: 'curly braces' },
+  ];
+
+  for (const pair of bracketPairs) {
+    let depth = 0;
+    for (let i = 0; i < code.length; i++) {
+      if (code[i] === pair.open) {
+        depth++;
+      } else if (code[i] === pair.close) {
+        depth--;
+        if (depth < 0) {
+          errors.push(`Unmatched closing ${pair.name} at position ${i}`);
+          return { valid: false, errors };
+        }
+      }
+    }
+    if (depth > 0) {
+      errors.push(`Unclosed ${pair.name}: ${depth} unclosed bracket(s)`);
+    }
+  }
+
+  const subgraphOpen = (code.match(/subgraph\s+[^\s]+\s*\[/g) || []).length;
+  const subgraphClose = (code.match(/end\s*$/gm) || []).length;
+  if (subgraphOpen !== subgraphClose) {
+    errors.push(`Unbalanced subgraphs: ${subgraphOpen} opened, ${subgraphClose} closed`);
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+/**
+ * Generate architecture diagram programmatically
+ */
+async function generateDiagram(): Promise<void> {
+  try {
+    // Validate API key is available
+    await getApiKey();
+  } catch (error: any) {
+    console.error('Cannot generate diagram: API key not available');
+    return;
+  }
+
+  const srcPath = path.join(repoPath, 'src');
+
+  try {
+    await fs.access(srcPath);
+  } catch (error) {
+    console.error('Cannot generate diagram: src/ directory not found');
+    return;
+  }
+
+  // Scan src/ directory
+  const fileStructure = await scanSrcDirectory();
+
+  // Read PROJECT_MEMORY.md for context
+  let projectMemory = '';
+  try {
+    projectMemory = await memoryManager.readMemory();
+  } catch (error) {
+    // Continue without context
+  }
+
+  // Build prompt for Gemini
+  const today = new Date().toLocaleDateString();
+  const prompt = `You are a Senior Software Architect & Mermaid.js Specialist. Your task is to generate a valid Mermaid.js flowchart (TD - Top Down) that visually represents the project's architecture.
+
+# PROJECT STRUCTURE
+\`\`\`
+${fileStructure}
+\`\`\`
+
+${projectMemory ? `# PROJECT CONTEXT\n\`\`\`\n${projectMemory}\n\`\`\`\n\n` : ''}# REQUIREMENTS
+1. Use Mermaid.js Flowchart syntax (flowchart TD)
+2. Structure:
+   - Use subgraphs to group "Internal Logic" vs "External Services"
+   - Nodes should represent key components (CLI, MCP Server, Watcher, Gemini API, File System, etc.)
+   - Edges should have descriptive text (e.g., "Sends Diffs", "Returns Summary", "Updates Memory")
+3. Color Styling (REQUIRED):
+   - Add a classDef section at the end of the Mermaid code (before the closing code block)
+   - Define three classes with the following colors:
+     * ExternalServices: fill:#e1f5fe (Light Blue)
+     * InternalLogic: fill:#e8f5e9 (Light Green)
+     * PersistenceFiles: fill:#fff8e1 (Soft Amber)
+   - Apply classes to subgraphs or specific nodes:
+     * Apply "ExternalServices" class to the "External Services" subgraph
+     * Apply "InternalLogic" class to the "Internal Logic" subgraph
+     * Apply "PersistenceFiles" class to nodes representing File System, Git Repository, or any persistence layer
+   - Example classDef syntax:
+     \`\`\`
+     classDef ExternalServices fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+     classDef InternalLogic fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+     classDef PersistenceFiles fill:#fff8e1,stroke:#f57f17,stroke-width:2px
+     \`\`\`
+   - Apply classes using: \`class subgraphId ExternalServices\` or \`class nodeId PersistenceFiles\`
+4. Syntax Rules:
+   - All node IDs must be alphanumeric (use [ ] for labels with spaces)
+   - Avoid special characters like & or > inside labels unless escaped
+   - Ensure all brackets are properly closed
+   - All subgraphs must have matching "end" statements
+5. Output Format:
+   - Wrap the output in a standard Markdown code block: \`\`\`mermaid
+   - Include a brief H1 header "# VibeGuard Architecture Diagram" before the code block
+   - Add a short "Legend" section after the diagram explaining symbols and color scheme
+
+# OUTPUT
+Return ONLY the complete Markdown content for DIAGRAM.md, including:
+- H1 header
+- Mermaid code block with valid syntax
+- Legend section
+
+Do not include any explanations outside the Markdown format.`;
+
+  const systemPrompt = `You are an expert at creating Mermaid.js diagrams for software architecture. You always generate valid, well-structured diagrams that follow Mermaid syntax rules strictly.`;
+
+  try {
+    const diagramContent = await generateSummary(prompt, systemPrompt, {
+      thinkingLevel: 'high',
+      maxTokens: 4000,
+    });
+
+    // Validate Mermaid syntax
+    const validation = validateMermaidSyntax(diagramContent);
+
+    let finalContent = diagramContent;
+    if (!validation.valid) {
+      // Try to fix common issues and regenerate
+      const fixPrompt = `The previous Mermaid diagram had syntax errors: ${validation.errors.join(', ')}. 
+
+Please regenerate the diagram with these fixes:
+${diagramContent}
+
+CRITICAL REQUIREMENTS:
+1. Ensure all brackets are closed and all subgraphs have matching "end" statements.
+2. MUST include color styling with classDef:
+   - classDef ExternalServices fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+   - classDef InternalLogic fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+   - classDef PersistenceFiles fill:#fff8e1,stroke:#f57f17,stroke-width:2px
+3. Apply classes to subgraphs: "External Services" subgraph gets ExternalServices class, "Internal Logic" subgraph gets InternalLogic class.
+4. Apply PersistenceFiles class to File System, Git Repository, or any persistence-related nodes.`;
+
+      const fixedContent = await generateSummary(fixPrompt, systemPrompt, {
+        thinkingLevel: 'high',
+        maxTokens: 4000,
+      });
+
+      const fixedValidation = validateMermaidSyntax(fixedContent);
+      if (fixedValidation.valid) {
+        finalContent = fixedContent;
+      }
+    }
+
+    // Save the diagram
+    const diagramPath = path.join(repoPath, 'DIAGRAM.md');
+    await fs.writeFile(diagramPath, finalContent, 'utf-8');
+  } catch (error: any) {
+    console.error('Error generating diagram:', error.message || error);
+  }
+}
 
 /**
  * Parse the Pinned Files section from PROJECT_MEMORY.md
@@ -220,6 +502,60 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   if (name === 'get_core_context') {
     try {
+      // Staleness Check: Compare src/ mtime with DIAGRAM.md mtime
+      const srcPath = path.join(repoPath, 'src');
+      const diagramPath = path.join(repoPath, 'DIAGRAM.md');
+      
+      let isStale = false;
+      let stalenessWarning = '';
+
+      try {
+        // Get latest mtime from src/ directory
+        const srcLatestMTime = await getLatestMTime(srcPath);
+        
+        // Get mtime of DIAGRAM.md if it exists
+        let diagramMTime: Date | null = null;
+        try {
+          const diagramStats = await fs.stat(diagramPath);
+          diagramMTime = diagramStats.mtime;
+        } catch (error) {
+          // DIAGRAM.md doesn't exist - consider it stale
+          if (srcLatestMTime) {
+            isStale = true;
+            stalenessWarning = 'CONTEXT_STALE: The architecture diagram is out of date.';
+          }
+        }
+
+        // Compare timestamps if both exist
+        if (srcLatestMTime && diagramMTime && srcLatestMTime > diagramMTime) {
+          isStale = true;
+          stalenessWarning = 'CONTEXT_STALE: The architecture diagram is out of date.';
+        }
+
+        // If stale, trigger visualization automatically
+        if (isStale) {
+          console.error('Context is stale. Regenerating DIAGRAM.md...');
+          await generateDiagram();
+          // Re-check after generation
+          try {
+            const newDiagramStats = await fs.stat(diagramPath);
+            const newSrcMTime = await getLatestMTime(srcPath);
+            if (newSrcMTime && newSrcMTime > newDiagramStats.mtime) {
+              // Still stale after generation (files changed during generation)
+              stalenessWarning = 'CONTEXT_STALE: The architecture diagram is out of date.';
+            } else {
+              // Successfully updated
+              stalenessWarning = '';
+            }
+          } catch (error) {
+            // Diagram generation may have failed, keep warning
+          }
+        }
+      } catch (error) {
+        // If we can't check staleness, continue without warning
+        console.error('Error checking staleness:', error);
+      }
+
       // Read PROJECT_MEMORY.md
       let memoryContent = await memoryManager.readMemory();
 
@@ -258,7 +594,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // Check if DIAGRAM.md exists and prepend it
-      const diagramPath = path.join(repoPath, 'DIAGRAM.md');
       let diagramContent = '';
       try {
         diagramContent = await fs.readFile(diagramPath, 'utf-8');
@@ -268,6 +603,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       // Read pinned files and build output
       const outputParts: string[] = ['# Pinned Project Context', ''];
+      
+      // Add staleness warning if present
+      if (stalenessWarning) {
+        outputParts.push(`**⚠️ ${stalenessWarning}**`, '');
+        outputParts.push('');
+      }
       
       // Prepend DIAGRAM.md if it exists
       if (diagramContent && diagramContent.trim().length > 0) {
