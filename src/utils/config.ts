@@ -7,6 +7,8 @@ export interface GlobalConfig {
   geminiApiKey?: string;
   maxTokens?: number;
   model?: string;
+  flashModel?: string;
+  proModel?: string;
 }
 
 /**
@@ -79,6 +81,7 @@ export async function getMaxTokens(): Promise<number> {
 
 /**
  * Get model name from config (with fallback)
+ * @deprecated Use getFlashModel() or getProModel() instead
  */
 export async function getModel(): Promise<string> {
   const envValue = process.env.VIBEGUARD_MODEL;
@@ -92,5 +95,51 @@ export async function getModel(): Promise<string> {
   }
 
   return 'gemini-3-flash-preview'; // Default
+}
+
+/**
+ * Get Flash model name from config (with fallback)
+ */
+export async function getFlashModel(): Promise<string> {
+  const envValue = process.env.VIBEGUARD_FLASH_MODEL;
+  if (envValue) {
+    return envValue;
+  }
+
+  const globalConfig = await loadGlobalConfig();
+  if (globalConfig?.flashModel) {
+    return globalConfig.flashModel;
+  }
+
+  // Fallback to legacy VIBEGUARD_MODEL if set
+  const legacyModel = process.env.VIBEGUARD_MODEL;
+  if (legacyModel) {
+    return legacyModel;
+  }
+
+  const legacyGlobalConfig = await loadGlobalConfig();
+  if (legacyGlobalConfig?.model) {
+    return legacyGlobalConfig.model;
+  }
+
+  return 'gemini-3-flash-preview'; // Default
+}
+
+/**
+ * Get Pro model name from config (with fallback to Flash if not configured)
+ */
+export async function getProModel(): Promise<string> {
+  const envValue = process.env.VIBEGUARD_PRO_MODEL;
+  if (envValue) {
+    return envValue;
+  }
+
+  const globalConfig = await loadGlobalConfig();
+  if (globalConfig?.proModel) {
+    return globalConfig.proModel;
+  }
+
+  // Fallback to Flash model if Pro is not configured
+  return await getFlashModel();
 }
 

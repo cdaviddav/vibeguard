@@ -70,8 +70,8 @@ async function handleWatch() {
           // Prefix with draft note
           const draftDiff = `## Draft Changes (Unstaged)\n\n${unstagedDiff}`;
           
-          // Summarize and update
-          const updatedMemory = await summarizer.summarizeDiff(draftDiff, currentMemory, 'medium');
+          // Summarize and update (using flash for routine summarization)
+          const updatedMemory = await summarizer.summarizeDiff(draftDiff, currentMemory, 'flash');
           
           // Write updated memory
           await memoryManager.writeMemory(updatedMemory);
@@ -107,8 +107,8 @@ async function handleWatch() {
       // Read current memory
       const currentMemory = await memoryManager.readMemory();
       
-      // Summarize and update
-      const updatedMemory = await summarizer.summarizeDiff(diff, currentMemory, 'medium');
+      // Summarize and update (using flash for routine summarization)
+      const updatedMemory = await summarizer.summarizeDiff(diff, currentMemory, 'flash');
       
       // Write updated memory
       await memoryManager.writeMemory(updatedMemory);
@@ -443,7 +443,7 @@ Do not include any explanations outside the Markdown format.`;
   
   try {
     const diagramContent = await generateSummary(prompt, systemPrompt, {
-      thinkingLevel: 'high',
+      thinkingLevel: 'pro',
       maxTokens: 4000,
     });
     
@@ -472,7 +472,7 @@ CRITICAL REQUIREMENTS:
 4. Apply PersistenceFiles class to File System, Git Repository, or any persistence-related nodes.`;
       
       const fixedContent = await generateSummary(fixPrompt, systemPrompt, {
-        thinkingLevel: 'high',
+        thinkingLevel: 'pro',
         maxTokens: 4000,
       });
       
@@ -542,7 +542,7 @@ async function handleSync(deep: boolean = false) {
         }
         
         const combinedDiff = diffs.join('\n\n---\n\n');
-        currentMemory = await summarizer.summarizeDiff(combinedDiff, currentMemory, 'medium');
+        currentMemory = await summarizer.summarizeDiff(combinedDiff, currentMemory, 'flash');
       }
       
       await memoryManager.writeMemory(currentMemory);
@@ -567,8 +567,8 @@ async function handleSync(deep: boolean = false) {
           // Prefix with draft note
           const draftDiff = `## Draft Changes (Unstaged)\n\n${unstagedDiff}`;
           
-          // Summarize and update
-          const updatedMemory = await summarizer.summarizeDiff(draftDiff, currentMemory, 'medium');
+          // Summarize and update (using flash for routine summarization)
+          const updatedMemory = await summarizer.summarizeDiff(draftDiff, currentMemory, 'flash');
           
           // Write updated memory
           await memoryManager.writeMemory(updatedMemory);
@@ -593,7 +593,7 @@ async function handleSync(deep: boolean = false) {
       
       const currentMemory = await memoryManager.readMemory();
       
-      const updatedMemory = await summarizer.summarizeDiff(diff, currentMemory, 'medium');
+      const updatedMemory = await summarizer.summarizeDiff(diff, currentMemory, 'flash');
       await memoryManager.writeMemory(updatedMemory);
       
       await watcher.setLastProcessedCommit(currentHead);

@@ -28,11 +28,11 @@ VibeGuard operates as a pipeline: Git Watcher/CLI triggers -> Range-based Diff P
 - **Auto-Summarization:** AI assistants must use the `update_project_memory` tool after every task to maintain real-time context.
 
 ## Recent Decisions (The "Why")
+- **Purged Debug Telemetry and Agent Logging (17.01.2026):** Removed verbose HTTP-based telemetry and "agent log" hooks from the watcher and initialization sequences. This cleans up the codebase following the stabilization of range-based diffing and self-healing logic, reducing execution side effects.
 - **Implemented Range-Based Diffing (17.01.2026):** Upgraded the watcher to calculate diffs across a range of commits (lastProcessed..HEAD) instead of just the latest commit. This ensures architectural changes are never missed if multiple commits occur rapidly between watcher cycles.
 - **Implemented Watcher State Recovery (17.01.2026):** Added logic to reset the `isProcessing` flag upon watcher startup. This ensures the system recovers gracefully from crashes or forced interruptions, preventing the memory manager from being permanently locked.
 - **Decoupled Project Memory from Version Control (14.01.2026):** Moved `PROJECT_MEMORY.md` and `DIAGRAM.md` to `.gitignore`. This prevents high-frequency documentation updates from bloating Git history, treating memory as a local "State of the World" artifact.
 - **Formalized Cursor Rule Protocols (14.01.2026):** Codified strict protocols for AI assistants via `.mdc` rules, mandating staleness checks for architecture diagrams and enforcing atomic memory updates.
-- **Enhanced Visual Soul with Color Styling (14.01.2026):** Extended the `vibeguard visualize` command to include color-coded Mermaid diagrams with a three-tier color scheme: External Services (Blue), Internal Logic (Green), and Persistence (Amber).
 
 ## Active Tech Debt
 - **Conflict Resolution:** AI-driven merge logic for `PROJECT_MEMORY.md` requires more robust testing on complex branch rebase scenarios and multi-user environments.
@@ -42,11 +42,12 @@ VibeGuard operates as a pipeline: Git Watcher/CLI triggers -> Range-based Diff P
 
 ## Session Summary (17.01.2026)
 **Completed:**
+- ✅ Purged verbose debug telemetry and agent logging from the watcher and core initialization.
 - ✅ Implemented self-healing logic for the Librarian Watcher to reset stale processing states on boot.
 - ✅ Integrated range-based Git diffing to capture all architectural shifts between processing cycles.
 - ✅ Added fallback mechanisms for Git diff failures to ensure continuous context tracking.
 
-**No Blockers:** The system now reliably captures multi-commit bursts.
+**No Blockers:** The system now reliably captures multi-commit bursts and is free of development-time telemetry bloat.
 
 **Next Steps:**
 - Investigate edge cases in `.git/HEAD` monitoring triggers during complex rebases.

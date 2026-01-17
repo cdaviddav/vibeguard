@@ -59,7 +59,7 @@ Task: Update the memory to reflect these changes. Ensure 'Recent Decisions' is u
   async summarizeDiff(
     diff: string,
     currentMemory: string = '',
-    thinkingLevel: 'high' | 'medium' = 'medium'
+    thinkingLevel: 'flash' | 'pro' = 'flash'
   ): Promise<string> {
     // Clean the diff first (pre-shredder)
     const cleaned = cleanDiff(diff);
@@ -120,7 +120,7 @@ ${summaries.map((s, i) => `## Summary ${i + 1}\n${s}`).join('\n\n')}
 Task: Create a single, unified PROJECT_MEMORY.md that combines all the information from these summaries.`;
 
       return await generateSummary(aggregatedPrompt, getLibrarianSystemPrompt(), {
-        thinkingLevel: 'high', // Use high thinking for merging
+        thinkingLevel: 'flash', // Use flash for merging (routine task)
         maxTokens,
       });
     }
@@ -134,7 +134,7 @@ Task: Create a single, unified PROJECT_MEMORY.md that combines all the informati
   async inferArchitecture(
     fileStructure: string,
     readme?: string,
-    thinkingLevel: 'high' | 'medium' = 'high'
+    thinkingLevel: 'flash' | 'pro' = 'flash'
   ): Promise<string> {
     const today = new Date().toLocaleDateString();
     const prompt = `File Structure:
@@ -191,7 +191,7 @@ Return only the merged Markdown content, no explanations.`;
     const maxTokens = await getMaxTokens();
 
     return await generateSummary(prompt, systemPrompt, {
-      thinkingLevel: 'high',
+      thinkingLevel: 'flash',
       temperature: 0.2, // Lower temperature for more consistent merging
       maxTokens,
     });

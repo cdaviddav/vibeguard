@@ -271,7 +271,7 @@ Do not include any explanations outside the Markdown format.`;
 
   try {
     const diagramContent = await generateSummary(prompt, systemPrompt, {
-      thinkingLevel: 'high',
+      thinkingLevel: 'pro',
       maxTokens: 4000,
     });
 
@@ -296,7 +296,7 @@ CRITICAL REQUIREMENTS:
 4. Apply PersistenceFiles class to File System, Git Repository, or any persistence-related nodes.`;
 
       const fixedContent = await generateSummary(fixPrompt, systemPrompt, {
-        thinkingLevel: 'high',
+        thinkingLevel: 'pro',
         maxTokens: 4000,
       });
 
@@ -481,7 +481,7 @@ Output only the 3 bullet points, no additional text.`;
 
   try {
     const summary = await generateSummary(summaryPrompt, systemPrompt, {
-      thinkingLevel: 'high',
+      thinkingLevel: 'pro',
       maxTokens: 500,
     });
 

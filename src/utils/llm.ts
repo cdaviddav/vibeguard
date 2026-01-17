@@ -1,28 +1,31 @@
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
-import { getApiKey, getMaxTokens, getModel } from './config';
+import { getApiKey, getMaxTokens, getFlashModel, getProModel } from './config';
 
 export interface LLMOptions {
   maxTokens?: number;
-  thinkingLevel?: 'high' | 'medium' | 'low';
+  thinkingLevel?: 'flash' | 'pro';
   temperature?: number;
 }
 
 let geminiClient: GoogleGenerativeAI | null = null;
-let currentModel: GenerativeModel | null = null;
+const modelCache: Map<string, GenerativeModel> = new Map();
 
 /**
- * Initialize Gemini client
+ * Initialize Gemini client with a specific model
  */
-async function initializeGemini(): Promise<GenerativeModel> {
-  if (currentModel) {
-    return currentModel;
+async function initializeGemini(modelName: string): Promise<GenerativeModel> {
+  // Check cache first
+  if (modelCache.has(modelName)) {
+    return modelCache.get(modelName)!;
   }
 
   const apiKey = await getApiKey();
-  const modelName = await getModel();
 
-  geminiClient = new GoogleGenerativeAI(apiKey);
-  currentModel = geminiClient.getGenerativeModel({ 
+  if (!geminiClient) {
+    geminiClient = new GoogleGenerativeAI(apiKey);
+  }
+
+  const model = geminiClient.getGenerativeModel({ 
     model: modelName,
     safetySettings: [
       {
@@ -44,7 +47,10 @@ async function initializeGemini(): Promise<GenerativeModel> {
     ],
   });
 
-  return currentModel;
+  // Cache the model
+  modelCache.set(modelName, model);
+
+  return model;
 }
 
 /**
@@ -64,7 +70,29 @@ export async function generateSummary(
   systemPrompt: string,
   options: LLMOptions = {}
 ): Promise<string> {
-  const model = await initializeGemini();
+  // Determine thinking level (default to 'flash')
+  const thinkingLevel = options.thinkingLevel || 'flash';
+  
+  // Get appropriate model based on thinking level
+  let modelName: string;
+  let modelDisplayName: string;
+  
+  if (thinkingLevel === 'pro') {
+    modelName = await getProModel();
+    modelDisplayName = 'Gemini 3 Pro';
+  } else {
+    modelName = await getFlashModel();
+    modelDisplayName = 'Gemini 3 Flash';
+  }
+
+  // Log model usage
+  if (thinkingLevel === 'pro') {
+    console.error(`[VibeGuard] Using ${modelDisplayName} for Architectural Pruning...`);
+  } else {
+    console.error(`[VibeGuard] Using ${modelDisplayName} for Summarization...`);
+  }
+
+  const model = await initializeGemini(modelName);
   const maxTokens = options.maxTokens || await getMaxTokens();
   const temperature = options.temperature ?? 0.3;
 
@@ -77,18 +105,10 @@ export async function generateSummary(
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      // Note: Gemini API may not support thinking_level directly in the current SDK
-      // This would need to be set via generation config if available
       const generationConfig: any = {
         maxOutputTokens: maxTokens,
         temperature,
       };
-
-      // If thinking level is supported, add it
-      // This is a placeholder for future API support
-      if (options.thinkingLevel) {
-        // generationConfig.thinkingLevel = options.thinkingLevel;
-      }
 
       const result = await model.generateContent({
         contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
