@@ -166,6 +166,18 @@ export class Watcher {
    * Start watching for Git changes
    */
   async startWatching(): Promise<void> {
+    // Reset any stale processing flag on startup (in case watcher was interrupted)
+    const state = await this.loadState();
+    if (state.isProcessing) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b84438ac-5444-41b2-87dd-53b7c6e4a93f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'watcher.ts:168',message:'Resetting stale isProcessing flag',data:{wasProcessing:true},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'G'})}).catch(()=>{});
+      // #endregion
+      await this.saveState({
+        ...state,
+        isProcessing: false,
+      });
+    }
+
     const gitPath = path.join(this.repoPath, '.git');
     const headPath = path.join(gitPath, 'HEAD');
     const indexPath = path.join(gitPath, 'index');
