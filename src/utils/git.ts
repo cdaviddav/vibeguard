@@ -55,6 +55,20 @@ export class GitUtils {
   }
 
   /**
+   * Get diff for a range of commits (from commit hash to HEAD)
+   * This handles cases where multiple commits happened and need to be processed together
+   */
+  async getCommitRangeDiff(fromCommit: string, toCommit: string): Promise<string> {
+    try {
+      // Use .. syntax for range diff
+      const diff = await this.git.diff([`${fromCommit}..${toCommit}`]);
+      return diff;
+    } catch (error: any) {
+      throw new Error(`Failed to get commit range diff from ${fromCommit} to ${toCommit}: ${error.message || error}`);
+    }
+  }
+
+  /**
    * Get unstaged changes (working directory diff)
    */
   async getUnstagedDiff(): Promise<string> {

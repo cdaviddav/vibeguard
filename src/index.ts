@@ -81,11 +81,25 @@ async function handleWatch() {
         return; // Already processed or no changes
       }
 
-      // Get diff for the new commit using latest commit diff method
-      const diff = await gitUtils.getLatestCommitDiff();
+      // Get diff for ALL commits between lastProcessed and currentHead
+      // This handles cases where multiple commits happened quickly
+      let diff: string;
+      if (lastProcessed) {
+        // Get diff from lastProcessed to currentHead (covers all commits in between)
+        try {
+          diff = await gitUtils.getCommitRangeDiff(lastProcessed, currentHead);
+        } catch (error: any) {
+          // Fallback: if range diff fails, try latest commit only
+          console.warn('Could not get commit range diff, falling back to latest commit:', error.message);
+          diff = await gitUtils.getLatestCommitDiff();
+        }
+      } else {
+        // No previous commit, use latest commit diff
+        diff = await gitUtils.getLatestCommitDiff();
+      }
       
       if (!diff || diff.trim().length === 0) {
-        console.log('No diff found for latest commit. Skipping...');
+        console.log('No diff found. Skipping...');
         await watcher.setLastProcessedCommit(currentHead);
         return;
       }
