@@ -152,7 +152,12 @@ export class Watcher {
     this.watcher = chokidar.watch(pathsToWatch, {
       persistent: true,
       ignoreInitial: true,
-      ignored: [/\.vibeguard/, /PROJECT_MEMORY\.md/],
+      ignored: [
+        /\.vibeguard/, 
+        /PROJECT_MEMORY\.md/,
+        /\.git\/.*\.lock$/, // OPTIMIZATION: Ignore Git lock files explicitly
+        /\.git\/COMMIT_EDITMSG$/ // OPTIMIZATION: Often noisy, focus on HEAD/refs
+      ],
       awaitWriteFinish: {
         stabilityThreshold: 1000, // Increased to 1 second for slower file systems
         pollInterval: 500, // Increased to 500ms to give Git operations time to finalize

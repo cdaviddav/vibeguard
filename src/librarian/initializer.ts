@@ -170,9 +170,8 @@ export class Initializer {
     const updatedMemory = await this.summarizer.summarizeDiff(
       combinedDiff,
       currentMemory,
-      'medium' // Medium thinking level for routine summaries
+      'flash' // OPTIMIZATION: Use Flash for diff summarization (faster/cheaper)
     );
-
     return updatedMemory;
   }
 
@@ -193,7 +192,7 @@ export class Initializer {
     const memory = await this.summarizer.inferArchitecture(
       fileStructure,
       readme || undefined,
-      'high' // High thinking level for architecture inference
+      'pro' // OPTIMIZATION: Use Pro for "Big Picture" architecture work
     );
 
     return memory;
@@ -244,7 +243,7 @@ export class Initializer {
       finalMemory = await this.summarizer.summarizeDiff(
         `# Architecture Update\n\n${tier3Memory}`,
         tier2Memory,
-        'high'
+        'pro' // OPTIMIZATION: Use Pro for "Big Picture" architecture work
       );
     }
 

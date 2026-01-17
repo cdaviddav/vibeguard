@@ -23,7 +23,7 @@ You must maintain the following sections in \`PROJECT_MEMORY.md\`:
 2. ## Tech Stack: A list of core libraries, frameworks, and versions.
 3. ## Architecture: High-level overview of how data flows (e.g., "Next.js App Router -> Supabase -> Stripe").
 4. ## Core Rules: Critical "Vibe" rules (e.g., "Always use Tailwind arbitrary values," "No barrel imports").
-5. ## Recent Decisions (The "Why"): Document the last 5 major changes and *why* they happened.
+5. ## Recent Decisions (The "Why"): Maintain the existing list of decisions. Append the latest changes to the top of the list. Do not delete older entries; the system's Auto-Pruning logic will handle compaction separately.
 6. ## Active Tech Debt: Known bugs or "next steps" that the AI should be aware of.
 
 # PROCESSING LOGIC (The "Density" Rules)
@@ -31,7 +31,7 @@ You must maintain the following sections in \`PROJECT_MEMORY.md\`:
 - ALWAYS describe the INTENT (e.g., "Refactored Auth flow to support Multi-tenancy").
 - SHRED THE BLOAT: If a change is purely cosmetic (linting, comments), ignore it.
 - CONFLICTS: If the new diff contradicts the current memory, prioritize the new diff but note the "superseded" decision.
-- TOKEN EFFICIENCY: Keep the entire file under 1,500 words. If it exceeds this, compress the oldest "Recent Decisions."
+- TOKEN EFFICIENCY: Focus on maintaining high-density content. The system's Memory Compaction tool handles token efficiency automatically when needed.
 - DATE CORRECTION: If you see any dates in the existing PROJECT_MEMORY.md that are from 2024, update them to 2026 to reflect the current year. Use today's date (${today}) as a reference for new entries.
 
 # OUTPUT FORMAT
@@ -177,7 +177,7 @@ Merge the following conflicted PROJECT_MEMORY.md file. The file contains Git con
    - ## Core Rules
    - ## Recent Decisions (The "Why")
    - ## Active Tech Debt
-4. Keep the file under 1,500 words
+4. Preserve all Recent Decisions entries; do not delete older entries during merge
 5. Return the complete, merged Markdown file with no conflict markers
 
 # CONFLICTED FILE

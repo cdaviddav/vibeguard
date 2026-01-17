@@ -22,6 +22,7 @@ VibeGuard operates as a pipeline: Git Watcher/CLI triggers -> Range-based Diff P
 - **Context Initialization:** AI assistants must call `get_core_context` before starting any task and verify `DIAGRAM.md` freshness.
 - **Atomic Updates:** Group related changes into a single "Atomic Update." If `Recent Decisions` exceeds 15 entries, summarize the oldest 5 into a "Legacy Decisions" block.
 - **Visual Standards:** Mermaid diagrams must use `direction TB` for the root and `direction LR` for subgraphs with specific classDef colors for Logic, Services, and Storage.
+- **Atomic Persistence:** Use `write-file-atomic` to prevent corruption during concurrent processes or interrupted watchers.
 - **Bloat Shredding:** Automatically ignore cosmetic changes, linting, whitespace, and lockfile updates.
 - **Temporal Awareness:** Always use 2026 for new entries; automatically migrate legacy 2024 references to 2026.
 
@@ -51,6 +52,7 @@ VibeGuard operates as a pipeline: Git Watcher/CLI triggers -> Range-based Diff P
 - ✅ Purged verbose debug telemetry and agent logging.
 - ✅ Implemented self-healing logic for the Librarian Watcher state.
 - ✅ Integrated range-based Git diffing for continuous context tracking.
+- ✅ Added `write-file-atomic` for robust memory persistence.
 
 **Next Steps:**
 - Investigate edge cases in `.git/HEAD` monitoring triggers during complex rebases.
