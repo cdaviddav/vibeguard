@@ -13,7 +13,7 @@ VibeGuard is a context management tool that maintains a high-density "Single Sou
 - **Configuration:** dotenv (Hybrid strategy: Env > .env > Global JSON)
 
 ## Architecture
-VibeGuard operates as a pipeline: Git Watcher/CLI triggers -> Diff Pre-shredder (bloat removal) -> Gemini 3 Flash Summarizer (intent extraction) -> Memory Manager -> `PROJECT_MEMORY.md`. The system supports "Draft Memory" by summarizing unstaged changes in real-time and hosts an MCP Server to expose tools for programmatic AI interaction. A "Pinned Files" mechanism allows the `get_core_context` tool to aggregate and serve critical project files (e.g., schema, config) and the `DIAGRAM.md` architecture visualization for immediate task initialization.
+VibeGuard operates as a pipeline: Git Watcher/CLI triggers -> Range-based Diff Pre-shredder (capturing all changes between processed states) -> Gemini 3 Flash Summarizer (intent extraction) -> Memory Manager -> `PROJECT_MEMORY.md`. The system supports "Draft Memory" by summarizing unstaged changes in real-time and hosts an MCP Server to expose tools for programmatic AI interaction. A "Pinned Files" mechanism allows the `get_core_context` tool to aggregate and serve critical project files and the `DIAGRAM.md` architecture visualization for immediate task initialization.
 
 ## Core Rules
 - **Density over Detail:** Never list individual file changes; describe architectural intent and the "why."
@@ -28,29 +28,29 @@ VibeGuard operates as a pipeline: Git Watcher/CLI triggers -> Diff Pre-shredder 
 - **Auto-Summarization:** AI assistants must use the `update_project_memory` tool after every task to maintain real-time context.
 
 ## Recent Decisions (The "Why")
-- **Decoupled Project Memory from Version Control (14.01.2026):** Moved `PROJECT_MEMORY.md` and `DIAGRAM.md` to `.gitignore`. This prevents high-frequency documentation updates from bloating Git history, treating memory as a local "State of the World" artifact rather than versioned source code.
-- **Formalized Cursor Rule Protocols for Context & Visualization (14.01.2026):** Codified strict protocols for AI assistants via `.mdc` rules. This mandates staleness checks for architecture diagrams, enforces atomic memory updates with pruning logic, and standardizes Mermaid styling.
+- **Implemented Range-Based Diffing (17.01.2026):** Upgraded the watcher to calculate diffs across a range of commits (lastProcessed..HEAD) instead of just the latest commit. This ensures architectural changes are never missed if multiple commits occur rapidly between watcher cycles.
+- **Implemented Watcher State Recovery (17.01.2026):** Added logic to reset the `isProcessing` flag upon watcher startup. This ensures the system recovers gracefully from crashes or forced interruptions, preventing the memory manager from being permanently locked.
+- **Decoupled Project Memory from Version Control (14.01.2026):** Moved `PROJECT_MEMORY.md` and `DIAGRAM.md` to `.gitignore`. This prevents high-frequency documentation updates from bloating Git history, treating memory as a local "State of the World" artifact.
+- **Formalized Cursor Rule Protocols (14.01.2026):** Codified strict protocols for AI assistants via `.mdc` rules, mandating staleness checks for architecture diagrams and enforcing atomic memory updates.
 - **Enhanced Visual Soul with Color Styling (14.01.2026):** Extended the `vibeguard visualize` command to include color-coded Mermaid diagrams with a three-tier color scheme: External Services (Blue), Internal Logic (Green), and Persistence (Amber).
-- **Added Visual Soul CLI Command (14.01.2026):** Implemented `vibeguard visualize` command that automatically scans the src/ directory and uses Gemini 3 Flash to generate a valid Mermaid.js architecture diagram.
-- **Implemented `get_core_context` and Pinned Files logic (14.01.2026):** Created a tool to aggregate contents of critical files defined in the "Pinned Files" section, ensuring AI assistants have immediate access to vital code/config.
 
 ## Active Tech Debt
 - **Conflict Resolution:** AI-driven merge logic for `PROJECT_MEMORY.md` requires more robust testing on complex branch rebase scenarios and multi-user environments.
 - **MCP Search Tool:** The MCP server currently serves the entire memory file; needs a targeted "Search" tool for context retrieval in massive projects.
-- **Watcher Robustness:** Monitoring of `.git/HEAD` may miss changes during specific complex rebase scenarios or fast-forward merges.
+- **Watcher Robustness:** Monitoring of `.git/HEAD` may still miss triggers during specific complex rebase scenarios or fast-forward merges, even though the diff range logic now captures the content correctly.
 - **Skeleton Scan Depth:** Architecture inference is currently capped at a directory depth of 10 to prevent token exhaustion in large monorepos.
 
-## Session Summary (14.01.2026)
+## Session Summary (17.01.2026)
 **Completed:**
-- ✅ Updated `.gitignore` to exclude `PROJECT_MEMORY.md` and `DIAGRAM.md` from version control.
-- ✅ Refactored Core Rules to reflect the shift from versioned memory to git-ignored local state.
-- ✅ Pruned "Recent Decisions" to maintain high density and focus on the latest architectural shifts.
+- ✅ Implemented self-healing logic for the Librarian Watcher to reset stale processing states on boot.
+- ✅ Integrated range-based Git diffing to capture all architectural shifts between processing cycles.
+- ✅ Added fallback mechanisms for Git diff failures to ensure continuous context tracking.
 
-**No Blockers:** The transition to git-ignored memory reduces repository noise without impacting AI context access via MCP.
+**No Blockers:** The system now reliably captures multi-commit bursts.
 
 **Next Steps:**
-- Ensure the `get_core_context` tool correctly resolves the git-ignored memory files across different local environments.
-- Monitor if the lack of versioned history for `PROJECT_MEMORY.md` impacts the ability to recover context after a fresh clone.
+- Investigate edge cases in `.git/HEAD` monitoring triggers during complex rebases.
+- Develop the targeted search tool for the MCP server to handle memory files exceeding token limits.
 
 ## Pinned Files
 - PROJECT_MEMORY.md
