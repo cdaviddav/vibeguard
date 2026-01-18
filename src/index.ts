@@ -4,6 +4,8 @@ import { Initializer } from './librarian/initializer';
 import { Watcher } from './librarian/watcher';
 import { Summarizer } from './librarian/summarizer';
 import { MemoryManager } from './librarian/memory-manager';
+import { OracleService } from './librarian/oracle';
+import { Heartbeat } from './librarian/heartbeat';
 import { GitUtils } from './utils/git';
 import { getApiKey, getModel } from './utils/config';
 import { generateSummary } from './utils/llm';
@@ -51,9 +53,16 @@ async function handleWatch() {
   const summarizer = new Summarizer();
   const memoryManager = new MemoryManager(repoPath);
   const gitUtils = new GitUtils(repoPath);
+  
+  // Initialize Oracle and Heartbeat
+  const oracle = new OracleService(repoPath);
+  const heartbeat = new Heartbeat(oracle);
+  heartbeat.start(); // Start quiet reflection monitoring
 
   // Set up commit processing callback
   watcher.onCommitDetected(async () => {
+    // Record activity for quiet reflection
+    heartbeat.recordActivity();
     try {
       console.log('New commit detected, processing...');
       
@@ -137,12 +146,14 @@ async function handleWatch() {
   // Handle graceful shutdown
   process.on('SIGINT', async () => {
     console.log('\nShutting down watcher...');
+    heartbeat.stop();
     await watcher.stopWatching();
     process.exit(0);
   });
 
   process.on('SIGTERM', async () => {
     console.log('\nShutting down watcher...');
+    heartbeat.stop();
     await watcher.stopWatching();
     process.exit(0);
   });

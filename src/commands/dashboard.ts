@@ -3,6 +3,8 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import open from 'open';
 import { Watcher } from '../librarian/watcher';
+import { OracleService } from '../librarian/oracle';
+import { AutoFixService } from '../librarian/autofix';
 
 export async function handleDashboard() {
   const repoPath = process.cwd();
@@ -75,6 +77,58 @@ export async function handleDashboard() {
       res.json({ status });
     } catch (error: any) {
       res.status(500).json({ error: error.message || 'Failed to get watcher status' });
+    }
+  });
+
+  app.get('/api/pulse', async (req, res) => {
+    try {
+      const oracle = new OracleService(repoPath);
+      const prophecies = await oracle.getProphecies();
+      
+      // Sort by priority and creation date (newest first)
+      const sortedProphecies = prophecies.sort((a, b) => {
+        const priorityOrder = { High: 3, Medium: 2, Low: 1 };
+        const priorityDiff = (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
+        if (priorityDiff !== 0) return priorityDiff;
+        
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+      
+      res.json({
+        prophecies: sortedProphecies,
+        count: sortedProphecies.length,
+        highPriorityCount: sortedProphecies.filter(p => p.priority === 'High').length,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || 'Failed to get oracle prophecies' });
+    }
+  });
+
+  app.post('/api/fix', express.json(), async (req, res) => {
+    try {
+      const { id } = req.body;
+      
+      if (!id || typeof id !== 'string') {
+        return res.status(400).json({ error: 'Prophecy ID is required' });
+      }
+
+      const autofix = new AutoFixService(repoPath);
+      const result = await autofix.applyFix(id);
+
+      if (result.success) {
+        res.json({
+          success: true,
+          branchName: result.branchName,
+          filesChanged: result.filesChanged || [],
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.error || 'Failed to apply fix',
+        });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || 'Failed to apply fix' });
     }
   });
   
