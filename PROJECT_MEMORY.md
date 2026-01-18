@@ -29,6 +29,7 @@ VibeGuard operates as a pipeline: Git Watcher/CLI triggers -> Range-based Diff P
 - **Temporal Awareness:** Always use 2026 for new entries; automatically migrate legacy 2024 references to 2026.
 
 ## Recent Decisions (The "Why")
+- **Optimized Dashboard Reactivity and Polling (18.01.2026):** Implemented deep-comparison logic and state-change guards in the dashboard's data-fetching hooks and components. This prevents unnecessary React re-renders during the 10-second polling cycle unless prophecy data or watcher status has materially changed.
 - **Expanded Oracle Reasoning Capacity (18.01.2026):** Increased the token limit for Gemini 3 Pro architectural analysis to 50k tokens. This enables the Oracle to process complex "prophecies" and deep-scan insights without truncation during large-scale project reflections.
 - **Expanded LLM Output Limits for Summarization (18.01.2026):** Increased `maxTokens` to 10,000 for Mermaid generation and summary extraction to handle large file contexts and complex diagrams.
 - **Rebranded Dashboard to VibeGuard Visual Identity (18.01.2026):** Migrated from generic cyberpunk styling to a specialized design system featuring Electric Indigo, Vibrant Violet, glassmorphism, and glow effects. Synchronized Mermaid.js themes and typography (Inter/JetBrains Mono) to align with the brand.
@@ -52,7 +53,6 @@ VibeGuard operates as a pipeline: Git Watcher/CLI triggers -> Range-based Diff P
 
 ## Active Tech Debt
 - **AutoFix Validation:** Need to implement "Pre-Commit Validation" (e.g., `npm run build` or `tsc`) within AutoFixService to ensure AI fixes don't introduce syntax errors.
-- **Dashboard API Implementation:** Backend API handlers need robust implementation to serve real-time memory and diagram data consistently.
 - **Conflict Resolution:** AI-driven merge logic for `PROJECT_MEMORY.md` requires hardening for complex branch rebase scenarios.
 - **MCP Search Tool:** Need a targeted "Search" tool for context retrieval in massive projects where memory exceeds token limits.
 - **Watcher Robustness:** Monitoring of `.git/HEAD` may miss triggers during specific complex rebases.

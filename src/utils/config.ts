@@ -9,7 +9,13 @@ export interface GlobalConfig {
   model?: string;
   flashModel?: string;
   proModel?: string;
+  scanDepth?: number;
 }
+
+/**
+ * Global constants for architectural scanning
+ */
+export const MAX_SCAN_DEPTH = 15;
 
 /**
  * Hybrid API key resolution with priority:
@@ -76,7 +82,7 @@ export async function getMaxTokens(): Promise<number> {
     return globalConfig.maxTokens;
   }
 
-  return 30000; // Default
+  return 50000; // Default aligned with 18.01.2026 decision for Oracle reasoning
 }
 
 /**
@@ -143,3 +149,22 @@ export async function getProModel(): Promise<string> {
   return await getFlashModel();
 }
 
+/**
+ * Get the maximum directory depth for architectural scans
+ */
+export async function getScanDepth(): Promise<number> {
+  const envValue = process.env.VIBEGUARD_SCAN_DEPTH;
+  if (envValue) {
+    const parsed = parseInt(envValue, 10);
+    if (!isNaN(parsed)) {
+      return parsed;
+    }
+  }
+
+  const globalConfig = await loadGlobalConfig();
+  if (globalConfig?.scanDepth) {
+    return globalConfig.scanDepth;
+  }
+
+  return MAX_SCAN_DEPTH;
+}
