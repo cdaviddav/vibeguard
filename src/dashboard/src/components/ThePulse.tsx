@@ -33,27 +33,27 @@ export default function ThePulse() {
   return (
     <div className="max-w-4xl">
       {/* Watcher Status Section */}
-      <div className="bg-cyber-surface border border-cyber-border rounded-lg p-6 mb-6">
+      <div className="bg-vibeguard-glass backdrop-blur-xl border border-vibeguard-glassBorder rounded-lg p-6 mb-6">
         <div className="flex items-center gap-4 mb-4">
           <Activity 
             size={32} 
-            className={status === 'active' ? 'text-cyber-accent animate-pulse' : 'text-cyber-textMuted'} 
+            className={status === 'active' ? 'text-vibeguard-success animate-pulse shadow-glow-success' : 'text-vibeguard-textMuted'} 
           />
           <div>
-            <h2 className="text-2xl font-semibold">Watcher Status</h2>
-            <p className="text-cyber-textMuted text-sm">Live monitoring will be available soon</p>
+            <h2 className="text-2xl font-semibold text-vibeguard-text font-sans">Watcher Status</h2>
+            <p className="text-vibeguard-textMuted text-sm">Live monitoring will be available soon</p>
           </div>
         </div>
 
         <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg ${
           status === 'active' 
-            ? 'bg-green-900/20 border border-green-500' 
-            : 'bg-cyber-border border border-cyber-border'
+            ? 'bg-vibeguard-success/10 border border-vibeguard-success/50 shadow-glow-success' 
+            : 'bg-vibeguard-glassHover border border-vibeguard-glassBorder'
         }`}>
           <div className={`w-3 h-3 rounded-full ${
-            status === 'active' ? 'bg-green-500 animate-pulse' : 'bg-cyber-textMuted'
+            status === 'active' ? 'bg-vibeguard-success animate-pulse' : 'bg-vibeguard-textMuted'
           }`}></div>
-          <span className="font-semibold capitalize">{status || 'idle'}</span>
+          <span className="font-semibold capitalize text-vibeguard-text">{status || 'idle'}</span>
         </div>
       </div>
 

@@ -46,23 +46,23 @@ export default function ProphecyCard({ prophecy, onAcknowledge }: ProphecyCardPr
       case 'RuleViolation':
         return {
           icon: AlertTriangle,
-          borderColor: 'border-yellow-500/50',
-          glowColor: 'shadow-[0_0_20px_rgba(234,179,8,0.3)]',
-          iconColor: 'text-yellow-500',
+          borderColor: 'border-vibeguard-warning/50',
+          glowColor: 'shadow-glow-warning',
+          iconColor: 'text-vibeguard-warning',
         };
       case 'Refactor':
         return {
           icon: Hammer,
-          borderColor: 'border-purple-500/50',
-          glowColor: 'shadow-[0_0_20px_rgba(168,85,247,0.3)]',
-          iconColor: 'text-purple-500',
+          borderColor: 'border-vibeguard-violet/50',
+          glowColor: 'shadow-glow-violet',
+          iconColor: 'text-vibeguard-violet',
         };
       case 'Optimization':
         return {
           icon: Zap,
-          borderColor: 'border-emerald-500/50',
-          glowColor: 'shadow-[0_0_20px_rgba(16,185,129,0.3)]',
-          iconColor: 'text-emerald-500',
+          borderColor: 'border-vibeguard-success/50',
+          glowColor: 'shadow-glow-success',
+          iconColor: 'text-vibeguard-success',
         };
     }
   };
@@ -100,66 +100,66 @@ export default function ProphecyCard({ prophecy, onAcknowledge }: ProphecyCardPr
         transition: { duration: 0.3 }
       }}
       transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-      className={`relative bg-slate-950/50 backdrop-blur-md border ${config.borderColor} ${config.glowColor} rounded-lg p-5 mb-4 transition-all hover:bg-slate-950/70`}
+      className={`relative bg-vibeguard-glass backdrop-blur-xl border ${config.borderColor} ${config.glowColor} rounded-lg p-5 mb-4 transition-all hover:bg-vibeguard-glassHover`}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <Icon className={`w-5 h-5 ${config.iconColor}`} />
-          <h3 className="text-lg font-semibold text-cyber-text font-mono">
+          <h3 className="text-lg font-semibold text-vibeguard-text font-sans">
             {prophecy.title}
           </h3>
         </div>
         <button
           onClick={handleAcknowledge}
-          className="p-1 rounded hover:bg-cyber-border/50 transition-colors group"
+          className="p-1 rounded hover:bg-vibeguard-glassHover transition-colors group"
           aria-label="Acknowledge prophecy"
         >
-          <X className="w-4 h-4 text-cyber-textMuted group-hover:text-cyber-text" />
+          <X className="w-4 h-4 text-vibeguard-textMuted group-hover:text-vibeguard-text" />
         </button>
       </div>
 
       {/* Body: Description */}
       <div className="mb-4">
-        <p className="text-sm text-cyber-textMuted leading-relaxed">
+        <p className="text-sm text-vibeguard-textMuted leading-relaxed">
           {prophecy.description}
         </p>
       </div>
 
       {/* Suggested Action */}
-      <div className="mt-4 pt-4 border-t border-cyber-border/30">
+      <div className="mt-4 pt-4 border-t border-vibeguard-glassBorder">
         <div className="flex items-start gap-2 mb-2">
-          <Sparkles className="w-4 h-4 text-cyber-accent mt-0.5" />
-          <span className="text-xs font-semibold text-cyber-accent uppercase tracking-wider">
+          <Sparkles className="w-4 h-4 text-vibeguard-primary mt-0.5" />
+          <span className="text-xs font-semibold text-vibeguard-primary uppercase tracking-wider">
             Suggested Action
           </span>
         </div>
-        <code className="block text-xs text-cyber-textSecondary bg-cyber-bg/50 px-3 py-2 rounded border border-cyber-border/30 font-mono whitespace-pre-wrap break-words">
+        <code className="block text-xs text-vibeguard-success bg-vibeguard-bgSecondary/50 px-3 py-2 rounded border border-vibeguard-glassBorder font-mono whitespace-pre-wrap break-words">
           {prophecy.suggestedAction}
         </code>
       </div>
 
       {/* Footer: Timestamp */}
-      <div className="mt-3 pt-3 border-t border-cyber-border/20">
-        <span className="text-xs text-cyber-textMuted/70">
+      <div className="mt-3 pt-3 border-t border-vibeguard-glassBorder/50">
+        <span className="text-xs text-vibeguard-textMuted/70">
           {formatTimestamp(prophecy.timestamp)}
         </span>
       </div>
 
       {/* Error Message */}
       {fixError && (
-        <div className="mt-3 p-2 bg-red-900/20 border border-red-500/50 rounded text-xs text-red-400">
+        <div className="mt-3 p-2 bg-vibeguard-error/10 border border-vibeguard-error/30 rounded text-xs text-vibeguard-error">
           {fixError}
         </div>
       )}
 
       {/* Action Buttons */}
-      <div className="flex gap-2 mt-4 pt-4 border-t border-cyber-border/30">
+      <div className="flex gap-2 mt-4 pt-4 border-t border-vibeguard-glassBorder">
         <motion.button
           whileHover={isFixing ? {} : { scale: 1.02 }}
           whileTap={isFixing ? {} : { scale: 0.98 }}
           disabled={isFixing}
-          className="flex-1 bg-cyber-accent text-cyber-bg px-4 py-2 rounded font-semibold text-sm hover:bg-cyber-accentHover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="flex-1 bg-gradient-to-r from-vibeguard-primary to-vibeguard-violet text-white px-4 py-2 rounded font-semibold text-sm hover:shadow-glow-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           onClick={handleFixWithAI}
         >
           {isFixing ? (
@@ -174,7 +174,7 @@ export default function ProphecyCard({ prophecy, onAcknowledge }: ProphecyCardPr
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className="px-4 py-2 rounded font-semibold text-sm border border-cyber-border text-cyber-textMuted hover:border-cyber-accent hover:text-cyber-accent transition-colors"
+          className="px-4 py-2 rounded font-semibold text-sm border border-vibeguard-glassBorder text-vibeguard-textMuted hover:border-vibeguard-primary hover:text-vibeguard-primary transition-colors"
           onClick={handleAcknowledge}
         >
           Acknowledge

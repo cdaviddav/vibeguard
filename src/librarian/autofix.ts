@@ -186,7 +186,7 @@ Analyze the above prophecy and identify which files need to be changed. Return o
     try {
       const response = await generateSummary(userPrompt, systemPrompt, {
         thinkingLevel: 'pro',
-        maxTokens: 500,
+        maxTokens: 10000,
         temperature: 0.3,
       });
 
@@ -253,7 +253,7 @@ Apply the suggested fix to this file. Return the complete updated file content w
     try {
       const response = await generateSummary(userPrompt, systemPrompt, {
         thinkingLevel: 'pro',
-        maxTokens: 8000,
+        maxTokens: 10000,
         temperature: 0.2,
       });
 

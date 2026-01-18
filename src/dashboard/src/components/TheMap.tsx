@@ -12,12 +12,21 @@ export default function TheMap() {
       startOnLoad: false,
       theme: 'dark',
       themeVariables: {
-        primaryColor: '#00ff88',
-        primaryTextColor: '#e0e7ff',
-        primaryBorderColor: '#1a2332',
-        lineColor: '#00ff88',
-        secondaryColor: '#141b2d',
-        tertiaryColor: '#0a0e27',
+        primaryColor: '#6366f1', // Electric Indigo
+        primaryTextColor: '#e4e4e7', // VibeGuard text
+        primaryBorderColor: 'rgba(255, 255, 255, 0.1)', // Glass border
+        lineColor: '#8b5cf6', // Vibrant Violet for connectors
+        secondaryColor: '#0a0a0f', // VibeGuard bg
+        tertiaryColor: 'rgba(255, 255, 255, 0.05)', // Glass surface
+        background: '#0a0a0f',
+        mainBkgColor: '#0a0a0f',
+        secondBkgColor: 'rgba(255, 255, 255, 0.05)',
+        textColor: '#e4e4e7',
+        border1: 'rgba(255, 255, 255, 0.1)',
+        border2: '#6366f1',
+        noteBkgColor: 'rgba(99, 102, 241, 0.1)',
+        noteTextColor: '#e4e4e7',
+        noteBorderColor: '#6366f1',
       },
     });
   }, []);
@@ -64,7 +73,7 @@ export default function TheMap() {
           });
       } else {
         if (mermaidRef.current) {
-          mermaidRef.current.innerHTML = '<div class="text-cyber-textMuted p-4">No mermaid diagram found in DIAGRAM.md</div>';
+              mermaidRef.current.innerHTML = '<div class="text-vibeguard-textMuted p-4">No mermaid diagram found in DIAGRAM.md</div>';
         }
       }
     }
@@ -73,24 +82,26 @@ export default function TheMap() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-cyber-textMuted">Loading DIAGRAM.md...</div>
+        <div className="text-vibeguard-textMuted">Loading DIAGRAM.md...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-900/20 border border-red-500 rounded-lg p-4">
-        <h2 className="text-red-400 font-semibold mb-2">Error</h2>
-        <p className="text-red-300">{error}</p>
+      <div className="bg-vibeguard-glass backdrop-blur-xl border border-vibeguard-error/30 rounded-lg p-4 shadow-glow-error">
+        <h2 className="text-vibeguard-error font-semibold mb-2">Error</h2>
+        <p className="text-vibeguard-errorLight">{error}</p>
       </div>
     );
   }
 
   return (
     <div className="max-w-6xl">
-      <h1 className="text-4xl font-bold mb-6 text-cyber-accent font-mono">The Map</h1>
-      <div className="bg-cyber-surface border border-cyber-border rounded-lg p-8">
+      <h1 className="text-4xl font-bold mb-6 bg-gradient-to-r from-vibeguard-primary to-vibeguard-violet bg-clip-text text-transparent font-sans">
+        The Map
+      </h1>
+      <div className="bg-vibeguard-glass backdrop-blur-xl border border-vibeguard-glassBorder rounded-lg p-8">
         <div ref={mermaidRef} className="flex justify-center items-center min-h-[400px] overflow-auto"></div>
       </div>
     </div>

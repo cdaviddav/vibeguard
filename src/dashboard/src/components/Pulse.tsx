@@ -12,10 +12,10 @@ export default function Pulse() {
   return (
     <div className="w-full max-w-4xl">
       <div className="mb-6">
-        <h1 className="text-4xl font-bold mb-2 text-cyber-accent font-mono">
+        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-vibeguard-primary to-vibeguard-violet bg-clip-text text-transparent font-sans">
           The Pulse
         </h1>
-        <p className="text-sm text-cyber-textMuted">
+        <p className="text-sm text-vibeguard-textMuted">
           Real-time Architectural Heartbeat • {prophecies.length} active prophecy{prophecies.length !== 1 ? 'ies' : ''}
         </p>
       </div>
@@ -24,23 +24,23 @@ export default function Pulse() {
       <div className="relative">
         <div className="overflow-y-auto max-h-[calc(100vh-12rem)] pr-2">
           {loading ? (
-            <div className="flex items-center justify-center h-64 bg-cyber-surface/30 border border-cyber-border rounded-lg">
+            <div className="flex items-center justify-center h-64 bg-vibeguard-glass backdrop-blur-xl border border-vibeguard-glassBorder rounded-lg">
               <div className="text-center">
-                <p className="text-cyber-textMuted">Loading prophecies...</p>
+                <p className="text-vibeguard-textMuted">Loading prophecies...</p>
               </div>
             </div>
           ) : error ? (
-            <div className="flex items-center justify-center h-64 bg-red-900/20 border border-red-500/50 rounded-lg">
+            <div className="flex items-center justify-center h-64 bg-vibeguard-glass backdrop-blur-xl border border-vibeguard-error/30 rounded-lg shadow-glow-error">
               <div className="text-center">
-                <p className="text-red-400 mb-2">Error loading prophecies</p>
-                <p className="text-sm text-red-400/70">{error}</p>
+                <p className="text-vibeguard-error mb-2">Error loading prophecies</p>
+                <p className="text-sm text-vibeguard-errorLight">{error}</p>
               </div>
             </div>
           ) : prophecies.length === 0 ? (
-            <div className="flex items-center justify-center h-64 bg-cyber-surface/30 border border-cyber-border rounded-lg">
+            <div className="flex items-center justify-center h-64 bg-vibeguard-glass backdrop-blur-xl border border-vibeguard-glassBorder rounded-lg">
               <div className="text-center">
-                <p className="text-cyber-textMuted mb-2">No prophecies detected</p>
-                <p className="text-sm text-cyber-textMuted/70">
+                <p className="text-vibeguard-textMuted mb-2">No prophecies detected</p>
+                <p className="text-sm text-vibeguard-textMuted/70">
                   The Oracle will surface insights as architectural drift is detected
                 </p>
               </div>
