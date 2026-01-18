@@ -5,7 +5,8 @@ VibeGuard is a context management tool that maintains a high-density "Single Sou
 
 ## Tech Stack
 - **Runtime/Language:** Node.js, TypeScript (executed via `tsx`)
-- **Frontend:** React 18, Vite, Tailwind CSS (Cyberpunk Theme), Lucide React, Framer Motion
+- **Frontend:** React 18, Vite, Tailwind CSS (VibeGuard Design System: Electric Indigo, Vibrant Violet, Glassmorphism), Lucide React, Framer Motion
+- **Typography:** Inter (Sans), JetBrains Mono (Code)
 - **Visualization:** Mermaid.js (Client-side rendering), React-Markdown
 - **LLM:** Gemini 3 Flash (Routine summarization) & Gemini 3 Pro (Architectural reasoning)
 - **Protocol:** Model Context Protocol (MCP) for native IDE integration
@@ -14,7 +15,7 @@ VibeGuard is a context management tool that maintains a high-density "Single Sou
 - **Validation/Config:** zod, dotenv (Env > .env > Global JSON)
 
 ## Architecture
-VibeGuard operates as a pipeline: Git Watcher/CLI triggers -> Range-based Diff Pre-shredder -> Tiered LLM Summarizer -> Memory Manager -> `PROJECT_MEMORY.md`. The system features an autonomous maintenance loop: a **Heartbeat** service monitors inactivity to trigger **Quiet Reflection** (Oracle analysis), which performs deep project scans (up to 15 levels) to identify architectural drift. These "Prophecies" are visualized in a React-based Dashboard via a local Express API and can be resolved via the **AutoFixService**, which manages isolated Git branches and AI-driven refactoring using atomic writes.
+VibeGuard operates as a pipeline: Git Watcher/CLI triggers -> Range-based Diff Pre-shredder -> Tiered LLM Summarizer -> Memory Manager -> `PROJECT_MEMORY.md`. The system features an autonomous maintenance loop: a **Heartbeat** service monitors inactivity to trigger **Quiet Reflection** (Oracle analysis), which performs deep project scans (up to 15 levels) to identify architectural drift. These "Prophecies" are visualized in a branded React-based Dashboard via a local Express API and can be resolved via the **AutoFixService**, which manages isolated Git branches and AI-driven refactoring using atomic writes.
 
 ## Core Rules
 - **Density over Detail:** Never list individual file changes; describe architectural intent and the "why."
@@ -28,13 +29,17 @@ VibeGuard operates as a pipeline: Git Watcher/CLI triggers -> Range-based Diff P
 - **Temporal Awareness:** Always use 2026 for new entries; automatically migrate legacy 2024 references to 2026.
 
 ## Recent Decisions (The "Why")
-- **Fully Integrated Autonomous Maintenance Loop (18.01.2026):** Connected Heartbeat and AutoFix services to the main watcher lifecycle. The system records activity on every commit and triggers "Quiet Reflection" via the Oracle after 10 minutes of idle time. AutoFixService is now capable of full-cycle repair: branch creation, AI-driven file identification, refactoring, and atomic commits.
-- **Finalized OracleService Implementation for Architectural Drift Detection (18.01.2026):** Completed core logic for the Oracle, performing deep project scans (15-level depth) using Gemini 3 Pro to identify "prophecies" (Refactor, RuleViolation, Optimization). Implemented state persistence in `.vibeguard/oracle.json` with a 20-entry rolling buffer and automated JSON extraction.
-- **Standardized Dashboard Data Fetching via usePulse Hook (18.01.2026):** Centralized prophecy management in a custom hook, implementing 10-second polling and mapping API responses to cyberpunk UI components. Optimized `ThePulse` component to focus on watcher status and feed orchestration.
-- **Implemented AutoFixService for Programmatic Architectural Drift Resolution (18.01.2026):** Created service to apply fixes to Oracle prophecies. It creates isolated branches (`vibeguard/fix-[id]`), uses Gemini 3 Pro for refactors, and performs atomic commits. Integrated with Dashboard via `POST /api/fix` and updated UI with "Fix with AI" triggers and loading states.
-- **Implemented Pulse Feed Component with Cyberpunk Styling (18.01.2026):** Developed a high-end notification system including `Pulse.tsx` and `ProphecyCard.tsx`. Features type-based glow effects (Yellow: Violation, Purple: Refactor, Emerald: Optimization) and Framer Motion animations (slide-in/pixel-dissolve).
-- **Introduced Integrated Web Dashboard (17.01.2026):** Developed a React/Vite-based visual interface to expose project memory and architecture, improving accessibility of AI insights via the `dashboard` CLI command.
-- **Optimized LLM Task Allocation (17.01.2026):** Explicitly mapped Gemini 3 Flash to routine diff summarization and Gemini 3 Pro to high-level architecture inference to maximize performance and cost-efficiency.
+- **Expanded Oracle Reasoning Capacity (18.01.2026):** Increased the token limit for Gemini 3 Pro architectural analysis to 50k tokens. This enables the Oracle to process complex "prophecies" and deep-scan insights without truncation during large-scale project reflections.
+- **Expanded LLM Output Limits for Summarization (18.01.2026):** Increased `maxTokens` to 10,000 for Mermaid generation and summary extraction to handle large file contexts and complex diagrams.
+- **Rebranded Dashboard to VibeGuard Visual Identity (18.01.2026):** Migrated from generic cyberpunk styling to a specialized design system featuring Electric Indigo, Vibrant Violet, glassmorphism, and glow effects. Synchronized Mermaid.js themes and typography (Inter/JetBrains Mono) to align with the brand.
+- **Expanded Documentation for Autonomous Features (18.01.2026):** Updated README and project structure to reflect the addition of Oracle, AutoFix, and Heartbeat services. Formalized configuration schemas for Gemini token limits and global config paths.
+- **Fully Integrated Autonomous Maintenance Loop (18.01.2026):** Connected Heartbeat and AutoFix services to the main watcher lifecycle. The system triggers "Quiet Reflection" via the Oracle after 10 minutes of idle time. AutoFixService now manages full-cycle repair: branch creation, AI-driven refactoring, and atomic commits.
+- **Finalized OracleService Implementation for Architectural Drift Detection (18.01.2026):** Completed core logic for the Oracle, performing deep project scans (15-level depth) using Gemini 3 Pro to identify "prophecies" (Refactor, RuleViolation, Optimization). Implemented state persistence in `.vibeguard/oracle.json` with a 20-entry rolling buffer.
+- **Standardized Dashboard Data Fetching via usePulse Hook (18.01.2026):** Centralized prophecy management in a custom hook with 10-second polling. Optimized `ThePulse` component to focus on watcher status and feed orchestration.
+- **Implemented AutoFixService for Programmatic Architectural Drift Resolution (18.01.2026):** Created service to apply fixes to Oracle prophecies via isolated branches (`vibeguard/fix-[id]`). Integrated with Dashboard via `POST /api/fix` with UI triggers and loading states.
+- **Implemented Pulse Feed Component with Branded Styling (18.01.2026):** Developed a notification system (`Pulse.tsx`, `ProphecyCard.tsx`) featuring type-based glow effects (Yellow: Violation, Purple: Refactor, Emerald: Optimization) and Framer Motion animations.
+- **Introduced Integrated Web Dashboard (17.01.2026):** Developed a React/Vite-based visual interface to expose project memory and architecture via the `dashboard` CLI command.
+- **Optimized LLM Task Allocation (17.01.2026):** Explicitly mapped Gemini 3 Flash to routine diff summarization and Gemini 3 Pro to high-level architecture inference.
 - **Hardened Watcher Stability (17.01.2026):** Increased Chokidar stability thresholds and added explicit ignores for Git lock files to prevent race conditions.
 - **Externalized Memory Compaction (17.01.2026):** Delegated density management to a specialized compaction tool to preserve historical context during active sessions.
 

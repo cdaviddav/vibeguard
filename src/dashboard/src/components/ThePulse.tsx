@@ -16,7 +16,14 @@ export default function ThePulse() {
           return res.json();
         })
         .then((data) => {
-          setStatus(data.status || 'idle');
+          const newStatus = data.status || 'idle';
+          // Only update if status actually changed
+          setStatus((prevStatus) => {
+            if (prevStatus !== newStatus) {
+              return newStatus;
+            }
+            return prevStatus; // Return previous to prevent re-render
+          });
         })
         .catch((err) => {
           console.error('Error fetching status:', err);
@@ -24,7 +31,7 @@ export default function ThePulse() {
     };
 
     fetchStatus();
-    // Poll every 10 seconds
+    // Poll every 10 seconds, but only update if status changed
     const interval = setInterval(fetchStatus, 10000);
 
     return () => clearInterval(interval);
