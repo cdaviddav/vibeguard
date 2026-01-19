@@ -166,7 +166,8 @@ class GeminiAdapter implements LLMAdapter {
     }
 
     // Extract usage information if available
-    const usageInfo = result.response.usageMetadata();
+    // usageMetadata is a property, not a method
+    const usageInfo = result.response.usageMetadata;
     const usage = usageInfo ? {
       inputTokens: usageInfo.promptTokenCount || estimateTokens(fullPrompt),
       outputTokens: usageInfo.candidatesTokenCount || estimateTokens(text),
