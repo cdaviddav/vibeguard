@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
-import { Brain, Map, Activity } from 'lucide-react';
+import { Brain, Map, Activity, Sparkles } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 type View = 'soul' | 'map' | 'pulse';
 
@@ -11,63 +12,113 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, currentView, onViewChange }: DashboardLayoutProps) {
   const navItems = [
-    { id: 'soul' as View, label: 'The Soul', icon: Brain },
-    { id: 'map' as View, label: 'The Map', icon: Map },
-    { id: 'pulse' as View, label: 'The Pulse', icon: Activity },
+    { id: 'soul' as View, label: 'The Soul', icon: Brain, description: 'Project Memory' },
+    { id: 'map' as View, label: 'The Map', icon: Map, description: 'Architecture' },
+    { id: 'pulse' as View, label: 'The Pulse', icon: Activity, description: 'Oracle Feed' },
   ];
 
   return (
-    <div className="min-h-screen bg-vibeguard-bg text-vibeguard-text">
+    <div className="min-h-screen bg-vg-bg relative overflow-hidden">
+      {/* Ambient gradient background */}
+      <div className="fixed inset-0 gradient-mesh pointer-events-none" />
+      
+      {/* Subtle grid pattern */}
+      <div 
+        className="fixed inset-0 pointer-events-none opacity-[0.02]"
+        style={{
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                           linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)`,
+          backgroundSize: '64px 64px',
+        }}
+      />
+
       {/* Sidebar */}
-      <aside className="fixed left-0 top-0 h-full w-64 bg-vibeguard-glass backdrop-blur-xl border-r border-vibeguard-glassBorder">
-        <div className="p-6 border-b border-vibeguard-glassBorder">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-vibeguard-primary to-vibeguard-violet bg-clip-text text-transparent font-sans">
-            VibeGuard
-          </h1>
-          <p className="text-sm text-vibeguard-textMuted mt-1">The Librarian</p>
+      <aside className="fixed left-0 top-0 h-full w-60 bg-white/[0.02] backdrop-blur-2xl border-r border-white/[0.06] z-50">
+        {/* Logo Section */}
+        <div className="p-5 border-b border-white/[0.06]">
+          <div className="flex items-center gap-2.5">
+            <div className="relative">
+              <div className="w-8 h-8 rounded-md bg-gradient-to-br from-vg-indigo to-vg-violet flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              <div className="absolute inset-0 rounded-md bg-gradient-to-br from-vg-indigo to-vg-violet blur-lg opacity-40" />
+            </div>
+            <div>
+              <h1 className="text-base font-semibold text-vg-text tracking-tight">
+                VibeGuard
+              </h1>
+              <p className="text-[10px] text-vg-textMuted uppercase tracking-widest">
+                The Librarian
+              </p>
+            </div>
+          </div>
         </div>
         
-        <nav className="p-4">
+        {/* Navigation */}
+        <nav className="p-3 mt-2">
+          <p className="px-3 mb-2 text-[10px] font-medium text-vg-textDim uppercase tracking-widest">
+            Views
+          </p>
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;
             
             return (
-              <button
+              <motion.button
                 key={item.id}
                 onClick={() => onViewChange(item.id)}
-                className={`relative w-full flex items-center gap-3 px-4 py-3 mb-2 rounded-lg transition-all group ${
+                whileHover={{ x: 2 }}
+                whileTap={{ scale: 0.98 }}
+                className={`relative w-full flex items-center gap-3 px-3 py-2.5 mb-1 rounded-md transition-all duration-200 group ${
                   isActive
-                    ? 'bg-vibeguard-glassHover text-vibeguard-text font-semibold shadow-glow-primary'
-                    : 'text-vibeguard-textMuted hover:text-vibeguard-text'
+                    ? 'bg-white/[0.06] text-vg-text'
+                    : 'text-vg-textSecondary hover:text-vg-text hover:bg-white/[0.03]'
                 }`}
               >
-                {/* Left border glow on hover/active */}
-                <span
-                  className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 rounded-r-full transition-all duration-300 ${
-                    isActive
-                      ? 'h-full bg-gradient-to-b from-vibeguard-primary to-vibeguard-violet shadow-glow-primary'
-                      : 'group-hover:h-3/4 group-hover:bg-vibeguard-primary/50 group-hover:shadow-glow-primary'
+                {/* Active indicator */}
+                {isActive && (
+                  <motion.div
+                    layoutId="activeIndicator"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-gradient-to-b from-vg-indigo to-vg-violet rounded-r-full"
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
+                )}
+                
+                <Icon 
+                  size={16} 
+                  className={`transition-colors duration-200 ${
+                    isActive 
+                      ? 'text-vg-indigo' 
+                      : 'text-vg-textMuted group-hover:text-vg-indigoLight'
                   }`}
                 />
-                <Icon 
-                  size={20} 
-                  className={isActive ? 'text-vibeguard-primary' : 'text-vibeguard-textMuted group-hover:text-vibeguard-primary transition-colors'} 
-                />
-                <span className="relative z-10">{item.label}</span>
-              </button>
+                <div className="flex flex-col items-start">
+                  <span className="text-[13px] font-medium">{item.label}</span>
+                  <span className="text-[10px] text-vg-textDim">{item.description}</span>
+                </div>
+              </motion.button>
             );
           })}
         </nav>
+
+        {/* Status indicator at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/[0.06]">
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <div className="w-2 h-2 rounded-full bg-vg-success" />
+              <div className="absolute inset-0 w-2 h-2 rounded-full bg-vg-success animate-ping opacity-75" />
+            </div>
+            <span className="text-[11px] text-vg-textMuted">System Online</span>
+          </div>
+        </div>
       </aside>
 
       {/* Main Content */}
-      <main className="ml-64 p-8">
-        {children}
+      <main className="ml-60 min-h-screen relative z-10">
+        <div className="p-6 lg:p-8">
+          {children}
+        </div>
       </main>
     </div>
   );
 }
-
-
-

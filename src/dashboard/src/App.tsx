@@ -7,6 +7,17 @@ import ThePulse from './components/ThePulse';
 
 type View = 'soul' | 'map' | 'pulse';
 
+const pageVariants = {
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -8 },
+};
+
+const pageTransition = {
+  duration: 0.25,
+  ease: [0.25, 0.1, 0.25, 1],
+};
+
 function App() {
   const [currentView, setCurrentView] = useState<View>('soul');
 
@@ -16,10 +27,11 @@ function App() {
         {currentView === 'soul' && (
           <motion.div
             key="soul"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={pageTransition}
           >
             <TheSoul />
           </motion.div>
@@ -27,10 +39,11 @@ function App() {
         {currentView === 'map' && (
           <motion.div
             key="map"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={pageTransition}
           >
             <TheMap />
           </motion.div>
@@ -38,10 +51,11 @@ function App() {
         {currentView === 'pulse' && (
           <motion.div
             key="pulse"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={pageTransition}
           >
             <ThePulse />
           </motion.div>
@@ -52,6 +66,3 @@ function App() {
 }
 
 export default App;
-
-
-
