@@ -76,16 +76,31 @@ export class ConfigManager {
     try {
       await fs.mkdir(configDir, { recursive: true });
     } catch (error: any) {
-      if (error.code !== 'EEXIST') {
-        throw error;
+      // Ignore EEXIST (directory already exists) on Unix
+      // On Windows, check for EEXIST or if directory already exists
+      if (error.code !== 'EEXIST' && error.code !== 'EISDIR') {
+        // Verify the directory actually exists before throwing
+        try {
+          const stats = await fs.stat(configDir);
+          if (!stats.isDirectory()) {
+            throw error;
+          }
+        } catch {
+          // Directory doesn't exist, rethrow original error
+          throw new Error(`Failed to create config directory: ${configDir}. Error: ${error.message || error}`);
+        }
       }
     }
 
-    await fs.writeFile(
-      ConfigManager.globalConfigPath,
-      JSON.stringify(config, null, 2),
-      'utf-8'
-    );
+    try {
+      await fs.writeFile(
+        ConfigManager.globalConfigPath,
+        JSON.stringify(config, null, 2),
+        'utf-8'
+      );
+    } catch (error: any) {
+      throw new Error(`Failed to write global config to ${ConfigManager.globalConfigPath}. Error: ${error.message || error}`);
+    }
   }
 
   /**

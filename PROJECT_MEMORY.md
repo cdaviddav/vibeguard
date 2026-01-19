@@ -1,7 +1,8 @@
 # PROJECT_MEMORY.md
 
 ## Project Soul
-VibeGuard is a context management tool that maintains a high-density "Single Source of Truth" for AI coding assistants by monitoring Git history and architectural shifts. It ensures LLMs in AI-driven IDEs have immediate access to architectural intent and the current "State of the World" without manual documentation overhead.
+
+VibeGuard is a context management application that maintains a high-density "Single Source of Truth" for AI coding assistants by monitoring Git history and architectural shifts. It ensures LLMs in AI-driven IDEs have immediate access to architectural intent and the current "State of the World" without manual documentation overhead.
 
 ## Tech Stack
 - **Runtime/Language:** Node.js, TypeScript (executed via `tsx`)

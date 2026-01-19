@@ -6,28 +6,9 @@ import { Initializer } from '../librarian/initializer';
 import { MemoryManager } from '../librarian/memory-manager';
 
 /**
- * ASCII art logo for VibeGuard
- */
-const VIBEGUARD_LOGO = `
-╔═══════════════════════════════════════════════════════════╗
-║                                                           ║
-║   ██╗   ██╗██╗██████╗ ███████╗ ██████╗ ██╗   ██╗ █████╗   ║
-║   ██║   ██║██║██╔══██╗██╔════╝██╔════╝ ██║   ██║██╔══██╗  ║
-║   ██║   ██║██║██████╔╝█████╗  ██║  ███╗██║   ██║███████║  ║
-║   ╚██╗ ██╔╝██║██╔══██╗██╔══╝  ██║   ██║██║   ██║██╔══██║  ║
-║    ╚████╔╝ ██║██║  ██║███████╗╚██████╔╝╚██████╔╝██║  ██║  ║
-║     ╚═══╝  ╚═╝╚═╝  ╚═╝╚══════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝  ║
-║                                                           ║
-║          Context Management for AI Coding Assistants      ║
-║                                                           ║
-╚═══════════════════════════════════════════════════════════╝
-`;
-
-/**
- * Show branding/logo
+ * Show branding
  */
 function showBranding(): void {
-  console.log(VIBEGUARD_LOGO);
   console.log('Welcome to VibeGuard! Let\'s set up your project.\n');
 }
 
@@ -85,16 +66,46 @@ async function stepProviderSetup(): Promise<LLMProvider> {
 
     // Save to global config if requested
     if (saveToGlobal) {
-      const globalConfig = await ConfigManager.loadGlobalConfig() || {};
-      if (provider === 'google') {
-        globalConfig.geminiApiKey = apiKeyInput;
-      } else if (provider === 'openai') {
-        globalConfig.openaiApiKey = apiKeyInput;
-      } else if (provider === 'anthropic') {
-        globalConfig.anthropicApiKey = apiKeyInput;
+      try {
+        const globalConfig = await ConfigManager.loadGlobalConfig() || {};
+        if (provider === 'google') {
+          globalConfig.geminiApiKey = apiKeyInput;
+        } else if (provider === 'openai') {
+          globalConfig.openaiApiKey = apiKeyInput;
+        } else if (provider === 'anthropic') {
+          globalConfig.anthropicApiKey = apiKeyInput;
+        }
+        
+        const configPath = ConfigManager.getGlobalConfigPath();
+        await ConfigManager.saveGlobalConfig(globalConfig);
+        
+        // Verify the file was actually created
+        let verified = false;
+        try {
+          const verifyConfig = await ConfigManager.loadGlobalConfig();
+          if (verifyConfig && 
+              ((provider === 'google' && verifyConfig.geminiApiKey) ||
+               (provider === 'openai' && verifyConfig.openaiApiKey) ||
+               (provider === 'anthropic' && verifyConfig.anthropicApiKey))) {
+            verified = true;
+          }
+        } catch (verifyError) {
+          // Verification failed, but file write might still have succeeded
+        }
+        
+        if (verified) {
+          console.log(`✅ API key saved successfully to global config`);
+          console.log(`   Location: ${configPath}\n`);
+        } else {
+          console.error(`⚠️  Warning: Config file may not have been saved correctly.`);
+          console.error(`   Expected location: ${configPath}`);
+          console.error(`   Please check if the file exists and contains your API key.\n`);
+        }
+      } catch (error: any) {
+        console.error(`❌ Failed to save API key to global config: ${error.message || error}`);
+        console.error(`Config path: ${ConfigManager.getGlobalConfigPath()}`);
+        throw error;
       }
-      await ConfigManager.saveGlobalConfig(globalConfig);
-      console.log('✅ API key saved to global config\n');
     } else {
       // Set as environment variable for this session
       if (provider === 'google') {
