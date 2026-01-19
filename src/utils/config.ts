@@ -2,6 +2,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 import { config } from 'dotenv';
+import { ConfigManager, GlobalConfig as ConfigManagerGlobalConfig } from './config-manager';
 
 export interface GlobalConfig {
   geminiApiKey?: string;
@@ -21,7 +22,8 @@ export const MAX_SCAN_DEPTH = 15;
  * Hybrid API key resolution with priority:
  * 1. process.env.GEMINI_API_KEY (direct env var - CI/CD)
  * 2. .env file in project root (via dotenv - Vibe Coding default)
- * 3. ~/.config/vibeguard/config.json (global fallback)
+ * 3. New ConfigManager (checks local config for provider, then global config)
+ * 4. Legacy global config file (~/.config/vibeguard/config.json)
  */
 export async function getApiKey(): Promise<string> {
   // Priority 1: Direct environment variable
@@ -35,7 +37,26 @@ export async function getApiKey(): Promise<string> {
     return process.env.GEMINI_API_KEY;
   }
 
-  // Priority 3: Global config file
+  // Priority 3: New ConfigManager (if local config exists, use it)
+  try {
+    const localConfig = await ConfigManager.loadLocalConfig();
+    if (localConfig) {
+      const apiKey = await ConfigManager.getApiKey(localConfig.provider);
+      if (apiKey) {
+        return apiKey;
+      }
+    } else {
+      // Try Google provider as fallback
+      const apiKey = await ConfigManager.getApiKey('google');
+      if (apiKey) {
+        return apiKey;
+      }
+    }
+  } catch {
+    // ConfigManager might not be set up yet, continue to legacy fallback
+  }
+
+  // Priority 4: Legacy global config file
   const globalConfig = await loadGlobalConfig();
   if (globalConfig?.geminiApiKey) {
     return globalConfig.geminiApiKey;
@@ -45,14 +66,26 @@ export async function getApiKey(): Promise<string> {
     'GEMINI_API_KEY not found. Please set it in one of the following ways:\n' +
     '  1. Environment variable: export GEMINI_API_KEY=your-key\n' +
     '  2. .env file: Create .env in project root with GEMINI_API_KEY=your-key\n' +
-    '  3. Global config: Create ~/.config/vibeguard/config.json with {"geminiApiKey": "your-key"}'
+    '  3. Run `vibeguard init` to configure via interactive wizard\n' +
+    '  4. Global config: Create ~/.vibeguard/config.json with {"geminiApiKey": "your-key"}'
   );
 }
 
 /**
- * Load global config from ~/.config/vibeguard/config.json
+ * Load global config from ~/.vibeguard/config.json (new) or ~/.config/vibeguard/config.json (legacy)
  */
 export async function loadGlobalConfig(): Promise<GlobalConfig | null> {
+  // Try new ConfigManager first
+  try {
+    const newConfig = await ConfigManager.loadGlobalConfig();
+    if (newConfig) {
+      return newConfig as GlobalConfig;
+    }
+  } catch {
+    // Continue to legacy path
+  }
+
+  // Legacy path: ~/.config/vibeguard/config.json
   try {
     const homeDir = os.homedir();
     const configPath = path.join(homeDir, '.config', 'vibeguard', 'config.json');

@@ -5,6 +5,7 @@ import open from 'open';
 import { Watcher } from '../librarian/watcher';
 import { OracleService } from '../librarian/oracle';
 import { AutoFixService } from '../librarian/autofix';
+import { getTokenUsageHistory } from '../utils/llm';
 
 export async function handleDashboard() {
   const repoPath = process.cwd();
@@ -129,6 +130,33 @@ export async function handleDashboard() {
       }
     } catch (error: any) {
       res.status(500).json({ error: error.message || 'Failed to apply fix' });
+    }
+  });
+
+  app.get('/api/tokens', async (req, res) => {
+    try {
+      const usageHistory = await getTokenUsageHistory();
+      
+      // Calculate totals by model
+      const modelStats: Record<string, { inputTokens: number; outputTokens: number; count: number }> = {};
+      
+      for (const usage of usageHistory) {
+        const key = `${usage.provider}:${usage.model}`;
+        if (!modelStats[key]) {
+          modelStats[key] = { inputTokens: 0, outputTokens: 0, count: 0 };
+        }
+        modelStats[key].inputTokens += usage.inputTokens;
+        modelStats[key].outputTokens += usage.outputTokens;
+        modelStats[key].count += 1;
+      }
+      
+      res.json({
+        history: usageHistory,
+        stats: modelStats,
+        total: usageHistory.length,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || 'Failed to get token usage' });
     }
   });
   
