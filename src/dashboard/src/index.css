@@ -1,25 +1,246 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: #0a0e27;
-  color: #e0e7ff;
-}
-
-code {
-  font-family: 'Courier New', monospace;
+/* Base styles */
+:root {
+  --vg-bg: #09090b;
+  --vg-indigo: #6366f1;
+  --vg-violet: #8b5cf6;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
 
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--vg-bg);
+  color: #fafafa;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
 
+/* Premium code styling */
+code, pre {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* Custom scrollbar - minimal & premium */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Selection styling */
+::selection {
+  background: rgba(99, 102, 241, 0.3);
+  color: #fafafa;
+}
+
+/* Glassmorphism utility classes */
+@layer components {
+  .glass-panel {
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.08];
+  }
+  
+  .glass-panel-strong {
+    @apply bg-white/[0.05] backdrop-blur-2xl border border-white/[0.1];
+  }
+  
+  .glass-hover {
+    @apply hover:bg-white/[0.06] transition-colors duration-200;
+  }
+  
+  /* Oracle glow effect */
+  .oracle-glow {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.3);
+  }
+  
+  .oracle-glow-active {
+    animation: oracleGlow 2s ease-in-out infinite;
+  }
+  
+  /* Text gradient utility */
+  .text-gradient {
+    @apply bg-gradient-to-r from-vg-indigo to-vg-violet bg-clip-text text-transparent;
+  }
+  
+  .text-gradient-cyan {
+    @apply bg-gradient-to-r from-vg-cyan to-vg-indigo bg-clip-text text-transparent;
+  }
+  
+  /* Bento card base */
+  .bento-card {
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-md p-6 transition-all duration-300;
+  }
+  
+  .bento-card:hover {
+    @apply bg-white/[0.05] border-white/[0.12];
+  }
+}
+
+/* Oracle glow animation */
+@keyframes oracleGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(99, 102, 241, 0.35);
+    border-color: rgba(99, 102, 241, 0.5);
+  }
+}
+
+/* Subtle noise texture overlay */
+.noise-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.02;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Gradient mesh background */
+.gradient-mesh {
+  background: 
+    radial-gradient(ellipse at 20% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 0% 50%, rgba(34, 211, 238, 0.04) 0%, transparent 40%);
+}
+
+/* Status indicator pulse */
+@keyframes statusPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+}
+
+.status-pulse {
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+/* Prose styling for markdown content */
+.prose-vg {
+  color: #a1a1aa;
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+.prose-vg h1,
+.prose-vg h2,
+.prose-vg h3,
+.prose-vg h4 {
+  color: #fafafa;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.prose-vg h1 {
+  font-size: 1.5rem;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.5rem;
+}
+
+.prose-vg h2 {
+  font-size: 1.125rem;
+  color: #e4e4e7;
+}
+
+.prose-vg h3 {
+  font-size: 1rem;
+  color: #d4d4d8;
+}
+
+.prose-vg code {
+  background: rgba(0, 0, 0, 0.4);
+  color: #22d3ee;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.8em;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.prose-vg pre {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0.375rem;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.prose-vg pre code {
+  background: transparent;
+  padding: 0;
+  color: #10b981;
+}
+
+.prose-vg a {
+  color: #6366f1;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.prose-vg a:hover {
+  color: #818cf8;
+}
+
+.prose-vg ul,
+.prose-vg ol {
+  margin-left: 1.25rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.prose-vg li {
+  margin: 0.375rem 0;
+}
+
+.prose-vg strong {
+  color: #fafafa;
+  font-weight: 600;
+}
+
+.prose-vg blockquote {
+  border-left: 2px solid rgba(99, 102, 241, 0.5);
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: #71717a;
+  font-style: italic;
+}

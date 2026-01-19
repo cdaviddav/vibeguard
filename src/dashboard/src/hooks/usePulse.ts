@@ -20,9 +20,10 @@ export function usePulse() {
 
   // Fetch prophecies from API
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchProphecies = async () => {
       try {
-        setLoading(true);
         setError(null);
         
         const response = await fetch('/api/pulse');
@@ -43,21 +44,58 @@ export function usePulse() {
           priority: p.priority,
         }));
         
-        setProphecies(mappedProphecies);
+        // Only update state if prophecies have actually changed
+        // Compare by creating a signature of IDs and timestamps
+        setProphecies((prev) => {
+          // Create a map of current prophecies by ID for quick lookup
+          const prevMap = new Map(prev.map(p => [p.id, p]));
+          const newMap = new Map(mappedProphecies.map(p => [p.id, p]));
+          
+          // Check if there are any differences
+          const hasNewProphecies = mappedProphecies.some(p => !prevMap.has(p.id));
+          const hasRemovedProphecies = prev.some(p => !newMap.has(p.id));
+          const hasChangedProphecies = mappedProphecies.some(p => {
+            const prevP = prevMap.get(p.id);
+            return prevP && (
+              prevP.title !== p.title ||
+              prevP.description !== p.description ||
+              prevP.suggestedAction !== p.suggestedAction ||
+              prevP.type !== p.type ||
+              prevP.priority !== p.priority
+            );
+          });
+          
+          // Only update if there are actual changes
+          if (hasNewProphecies || hasRemovedProphecies || hasChangedProphecies) {
+            return mappedProphecies;
+          }
+          
+          // No changes, return previous state to prevent re-render
+          return prev;
+        });
       } catch (err: any) {
-        console.error('Error fetching prophecies:', err);
-        setError(err.message || 'Failed to load prophecies');
-        setProphecies([]);
-      } finally {
-        setLoading(false);
+        if (isMounted) {
+          console.error('Error fetching prophecies:', err);
+          setError(err.message || 'Failed to load prophecies');
+        }
       }
     };
 
-    fetchProphecies();
-    // Poll every 10 seconds
+    // Initial fetch with loading state
+    setLoading(true);
+    fetchProphecies().finally(() => {
+      if (isMounted) {
+        setLoading(false);
+      }
+    });
+    
+    // Poll every 10 seconds, but only update if data changed
     const interval = setInterval(fetchProphecies, 10000);
 
-    return () => clearInterval(interval);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   // Function to acknowledge (remove) a prophecy

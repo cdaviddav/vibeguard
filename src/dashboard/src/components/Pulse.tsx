@@ -1,6 +1,7 @@
 import { AnimatePresence } from 'framer-motion';
 import { usePulse } from '../hooks/usePulse';
 import ProphecyCard from './ProphecyCard';
+import { Activity, Loader2, Inbox } from 'lucide-react';
 
 /**
  * Pulse Feed Component - Real-time "Architectural Heartbeat" feed
@@ -10,55 +11,59 @@ export default function Pulse() {
   const { prophecies, loading, error, acknowledgeProphecy } = usePulse();
 
   return (
-    <div className="w-full max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-4xl font-bold mb-2 text-cyber-accent font-mono">
-          The Pulse
-        </h1>
-        <p className="text-sm text-cyber-textMuted">
-          Real-time Architectural Heartbeat • {prophecies.length} active prophecy{prophecies.length !== 1 ? 'ies' : ''}
-        </p>
+    <div className="w-full">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Activity className="w-4 h-4 text-vg-indigo" />
+          <h2 className="text-sm font-medium text-vg-text">Oracle Feed</h2>
+        </div>
+        <span className="text-[10px] px-2 py-1 rounded-full bg-white/[0.05] text-vg-textMuted font-mono">
+          {prophecies.length} active
+        </span>
       </div>
 
-      {/* Scrolling Feed Container */}
+      {/* Feed Container */}
       <div className="relative">
-        <div className="overflow-y-auto max-h-[calc(100vh-12rem)] pr-2">
+        <div className="overflow-y-auto max-h-[600px] pr-2">
           {loading ? (
-            <div className="flex items-center justify-center h-64 bg-cyber-surface/30 border border-cyber-border rounded-lg">
-              <div className="text-center">
-                <p className="text-cyber-textMuted">Loading prophecies...</p>
-              </div>
+            <div className="flex flex-col items-center justify-center h-48 bg-white/[0.02] backdrop-blur-xl border border-white/[0.06] rounded-md">
+              <Loader2 className="w-5 h-5 text-vg-indigo animate-spin mb-2" />
+              <p className="text-xs text-vg-textMuted">Loading prophecies...</p>
             </div>
           ) : error ? (
-            <div className="flex items-center justify-center h-64 bg-red-900/20 border border-red-500/50 rounded-lg">
-              <div className="text-center">
-                <p className="text-red-400 mb-2">Error loading prophecies</p>
-                <p className="text-sm text-red-400/70">{error}</p>
-              </div>
+            <div className="flex flex-col items-center justify-center h-48 bg-vg-errorMuted border border-vg-error/20 rounded-md">
+              <p className="text-xs text-vg-error mb-1">Error loading prophecies</p>
+              <p className="text-[10px] text-vg-textMuted">{error}</p>
             </div>
           ) : prophecies.length === 0 ? (
-            <div className="flex items-center justify-center h-64 bg-cyber-surface/30 border border-cyber-border rounded-lg">
-              <div className="text-center">
-                <p className="text-cyber-textMuted mb-2">No prophecies detected</p>
-                <p className="text-sm text-cyber-textMuted/70">
-                  The Oracle will surface insights as architectural drift is detected
-                </p>
-              </div>
+            <div className="flex flex-col items-center justify-center h-48 bg-white/[0.02] backdrop-blur-xl border border-white/[0.06] rounded-md">
+              <Inbox className="w-6 h-6 text-vg-textDim mb-2" />
+              <p className="text-xs text-vg-textMuted mb-1">No prophecies detected</p>
+              <p className="text-[10px] text-vg-textDim text-center max-w-[200px]">
+                The Oracle will surface insights as architectural drift is detected
+              </p>
             </div>
           ) : (
-            <AnimatePresence mode="popLayout">
-              {prophecies.map((prophecy) => (
-                <ProphecyCard
-                  key={prophecy.id}
-                  prophecy={prophecy}
-                  onAcknowledge={acknowledgeProphecy}
-                />
-              ))}
-            </AnimatePresence>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <AnimatePresence mode="popLayout">
+                {prophecies.map((prophecy) => (
+                  <ProphecyCard
+                    key={prophecy.id}
+                    prophecy={prophecy}
+                    onAcknowledge={acknowledgeProphecy}
+                  />
+                ))}
+              </AnimatePresence>
+            </div>
           )}
         </div>
+        
+        {/* Fade gradient at bottom when scrollable */}
+        {prophecies.length > 3 && (
+          <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-vg-bg to-transparent pointer-events-none" />
+        )}
       </div>
     </div>
   );
 }
-

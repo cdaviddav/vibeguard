@@ -9,7 +9,11 @@ A context management tool for AI-assisted coding that watches Git history, captu
 - **High-Density Memory**: Maintains a concise "Single Source of Truth" for AI coding assistants
 - **Auto-Staging**: Keeps `PROJECT_MEMORY.md` in sync with your code
 - **Conflict Resolution**: Automatically merges Git conflicts using AI
-- **MCP Protocol Support**: Native Model Context Protocol (MCP) server for direct integration with Cursor, Claude Desktop, and other AI IDEs.
+- **MCP Protocol Support**: Native Model Context Protocol (MCP) server for direct integration with Cursor, Claude Desktop, and other AI IDEs
+- **Dashboard**: Visual web interface with "The Soul", "The Map", and "The Pulse" views for real-time project insights
+- **Oracle**: Architectural drift detection that identifies violations, refactors, and optimizations
+- **AutoFix**: AI-powered automatic refactoring engine that creates isolated Git branches for fixes
+- **Heartbeat**: Quiet reflection service that triggers oracle analysis during inactivity periods
 
 
 ## AI Assistant Integration
@@ -37,18 +41,21 @@ VibeGuard uses a hybrid configuration strategy with priority order:
 1. **Environment Variable** (CI/CD, power users):
    ```bash
    export GEMINI_API_KEY=your-api-key
+   export VIBEGUARD_MAX_TOKENS=8000  # Optional: max output tokens (default: 30000)
    ```
 
 2. **`.env` File** (Vibe Coding default):
    ```bash
-   cp .env.example .env
-   # Edit .env and add your GEMINI_API_KEY
+   # Create .env file in project root
+   # Add your configuration:
+   GEMINI_API_KEY=your-api-key
+   VIBEGUARD_MAX_TOKENS=8000
    ```
 
 3. **Global Config** (cross-project):
    ```bash
    mkdir -p ~/.config/vibeguard
-   echo '{"geminiApiKey": "your-api-key"}' > ~/.config/vibeguard/config.json
+   echo '{"geminiApiKey": "your-api-key", "maxTokens": 8000}' > ~/.config/vibeguard/config.json
    ```
 
 ### Getting Your Gemini API Key
@@ -104,6 +111,25 @@ Process full Git history (token-intensive):
 npm run dev sync --deep
 ```
 
+### Dashboard
+
+Launch the visual web interface:
+
+```bash
+npm run dev dashboard
+```
+
+The dashboard provides three views:
+- **The Soul**: View and browse `PROJECT_MEMORY.md` content
+- **The Map**: Visualize architecture with interactive Mermaid diagrams
+- **The Pulse**: Monitor watcher status and Oracle prophecies in real-time
+
+Build the dashboard for production:
+
+```bash
+npm run build:dashboard
+```
+
 ## PROJECT_MEMORY.md Schema
 
 The generated `PROJECT_MEMORY.md` follows this structure:
@@ -156,19 +182,35 @@ vibeguard/
 ├── src/
 │   ├── index.ts                 # CLI entry point
 │   ├── mcp-server.ts            # MCP server for Cursor integration
+│   ├── commands/
+│   │   └── dashboard.ts         # Dashboard Express server
 │   ├── librarian/
 │   │   ├── watcher.ts           # Git change detection
 │   │   ├── summarizer.ts        # Gemini integration
 │   │   ├── memory-manager.ts    # PROJECT_MEMORY.md management
-│   │   └── initializer.ts       # Three-tier initialization
-│   └── utils/
-│       ├── llm.ts              # Gemini API wrapper
-│       ├── git.ts              # Git operations
-│       ├── config.ts           # Configuration manager
-│       ├── diff-cleaner.ts     # Pre-shredder
-│       └── chunker.ts          # Large diff handler
-├── PROJECT_MEMORY.md           # Generated memory (tracked in Git)
-└── .env.example                # Environment template
+│   │   ├── initializer.ts       # Three-tier initialization
+│   │   ├── oracle.ts            # Architectural drift detection
+│   │   ├── autofix.ts           # AI-powered refactoring engine
+│   │   └── heartbeat.ts         # Quiet reflection service
+│   ├── dashboard/               # React/Vite dashboard application
+│   │   ├── src/
+│   │   │   ├── components/      # React components (TheSoul, TheMap, ThePulse, etc.)
+│   │   │   ├── hooks/           # React hooks (usePulse)
+│   │   │   └── App.tsx          # Dashboard entry point
+│   │   └── package.json         # Dashboard dependencies
+│   ├── utils/
+│   │   ├── llm.ts              # Gemini API wrapper
+│   │   ├── git.ts              # Git operations
+│   │   ├── config.ts           # Configuration manager
+│   │   ├── diff-cleaner.ts     # Pre-shredder
+│   │   └── chunker.ts          # Large diff handler
+│   └── types/
+│       └── write-file-atomic.d.ts
+├── scripts/
+│   └── copy-dashboard.js       # Build script for dashboard deployment
+├── PROJECT_MEMORY.md           # Generated memory (git-ignored)
+├── DIAGRAM.md                  # Generated architecture diagram
+└── .env                        # Environment configuration (git-ignored)
 ```
 
 ## License

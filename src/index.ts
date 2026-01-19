@@ -457,7 +457,7 @@ Do not include any explanations outside the Markdown format.`;
   try {
     const diagramContent = await generateSummary(prompt, systemPrompt, {
       thinkingLevel: 'pro',
-      maxTokens: 4000,
+      maxTokens: 10000,
     });
     
     // Validate Mermaid syntax
@@ -486,7 +486,7 @@ CRITICAL REQUIREMENTS:
       
       const fixedContent = await generateSummary(fixPrompt, systemPrompt, {
         thinkingLevel: 'pro',
-        maxTokens: 4000,
+        maxTokens: 10000,
       });
       
       const fixedValidation = validateMermaidSyntax(fixedContent);
