@@ -181,6 +181,7 @@ Analyze the above and identify 3 specific areas of architectural drift. Return a
         thinkingLevel: 'pro',
         maxTokens: 50000,
         temperature: 0.5,
+        feature: 'Oracle',
       });
 
       // Parse the JSON response

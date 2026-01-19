@@ -1,15 +1,16 @@
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 import { ConfigManager, LLMProvider, ModelProfile } from './config-manager';
 import { getMaxTokens } from './config';
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import { TokenTracker, Feature } from '../services/token-tracker';
 
 export interface LLMOptions {
   maxTokens?: number;
   thinkingLevel?: 'flash' | 'pro';
   temperature?: number;
+  feature?: Feature; // Feature making the call (Librarian/Oracle/AutoFix)
 }
 
+// Legacy TokenUsage interface for backward compatibility
 export interface TokenUsage {
   model: string;
   provider: LLMProvider;
@@ -19,41 +20,14 @@ export interface TokenUsage {
   cost?: number; // Cost in USD (optional, can be calculated later)
 }
 
-// Token tracking storage
-const TOKEN_TRACKING_FILE = path.join(process.cwd(), '.vibeguard', 'token-usage.json');
+// Singleton TokenTracker instance
+let tokenTracker: TokenTracker | null = null;
 
-/**
- * Track token usage for analytics
- */
-async function trackTokenUsage(usage: TokenUsage): Promise<void> {
-  try {
-    const trackingDir = path.dirname(TOKEN_TRACKING_FILE);
-    await fs.mkdir(trackingDir, { recursive: true });
-
-    let usageHistory: TokenUsage[] = [];
-    try {
-      const content = await fs.readFile(TOKEN_TRACKING_FILE, 'utf-8');
-      usageHistory = JSON.parse(content);
-    } catch {
-      // File doesn't exist, start fresh
-    }
-
-    usageHistory.push(usage);
-
-    // Keep only last 1000 entries to prevent file from growing too large
-    if (usageHistory.length > 1000) {
-      usageHistory = usageHistory.slice(-1000);
-    }
-
-    await fs.writeFile(
-      TOKEN_TRACKING_FILE,
-      JSON.stringify(usageHistory, null, 2),
-      'utf-8'
-    );
-  } catch (error) {
-    // Don't fail if token tracking fails
-    console.warn('[VibeGuard] Failed to track token usage:', error);
+function getTokenTracker(): TokenTracker {
+  if (!tokenTracker) {
+    tokenTracker = new TokenTracker();
   }
+  return tokenTracker;
 }
 
 /**
@@ -362,14 +336,19 @@ export async function generateSummary(
     try {
       const result = await adapter.generate(prompt, systemPrompt, options);
       
-      // Track token usage
-      if (result.usage) {
-        await trackTokenUsage({
+      // Track token usage with TokenTracker (async, non-blocking)
+      if (result.usage && options.feature) {
+        const tracker = getTokenTracker();
+        // Fire and forget - don't wait for it to complete
+        tracker.logUsage({
+          feature: options.feature,
           model: modelName,
           provider,
           inputTokens: result.usage.inputTokens,
           outputTokens: result.usage.outputTokens,
-          timestamp: new Date().toISOString(),
+        }).catch(err => {
+          // Silently handle errors - tracking shouldn't block execution
+          console.warn('[VibeGuard] Token tracking failed:', err);
         });
       }
 
@@ -400,13 +379,20 @@ export async function generateSummary(
 }
 
 /**
- * Get token usage history
+ * Get token usage history (legacy support)
+ * @deprecated Use TokenTracker.getUsageLogs() instead
  */
 export async function getTokenUsageHistory(): Promise<TokenUsage[]> {
-  try {
-    const content = await fs.readFile(TOKEN_TRACKING_FILE, 'utf-8');
-    return JSON.parse(content) as TokenUsage[];
-  } catch {
-    return [];
-  }
+  const tracker = getTokenTracker();
+  const logs = await tracker.getUsageLogs();
+  
+  // Convert to legacy format
+  return logs.map(log => ({
+    model: log.model,
+    provider: log.provider,
+    inputTokens: log.inputTokens,
+    outputTokens: log.outputTokens,
+    timestamp: log.timestamp,
+    cost: log.cost,
+  }));
 }

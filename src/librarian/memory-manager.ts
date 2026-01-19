@@ -218,6 +218,7 @@ Return only the merged Markdown content, no explanations.`;
       const merged = await generateSummary(conflictPrompt, systemPrompt, {
         thinkingLevel: 'flash',
         temperature: 0.2, // Lower temperature for more consistent merging
+        feature: 'Librarian',
       });
 
       // Validate the merged result

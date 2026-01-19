@@ -1,10 +1,30 @@
 import { useEffect, useState } from 'react';
-import { Activity, Radio, Zap } from 'lucide-react';
+import { Activity, Radio, Zap, DollarSign, TrendingDown, Layers } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Pulse from './Pulse';
 
+interface TokenSummary {
+  totalSpend: number;
+  totalTokens: number;
+  totalSavings: number;
+  breakdownByFeature: Record<string, {
+    spend: number;
+    tokens: number;
+    savings: number;
+  }>;
+}
+
+interface DailyBreakdown {
+  date: string;
+  cost: number;
+  savings: number;
+}
+
 export default function ThePulse() {
   const [status, setStatus] = useState<'active' | 'idle' | null>(null);
+  const [tokenSummary, setTokenSummary] = useState<TokenSummary | null>(null);
+  const [dailyBreakdown, setDailyBreakdown] = useState<DailyBreakdown[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchStatus = () => {
@@ -33,6 +53,51 @@ export default function ThePulse() {
     const interval = setInterval(fetchStatus, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const fetchTokenUsage = () => {
+      fetch('/api/token-usage')
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`Failed to fetch token usage: ${res.statusText}`);
+          }
+          return res.json();
+        })
+        .then((data) => {
+          setTokenSummary(data.summary);
+          setDailyBreakdown(data.dailyBreakdown || []);
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error('Error fetching token usage:', err);
+          setLoading(false);
+        });
+    };
+
+    fetchTokenUsage();
+    const interval = setInterval(fetchTokenUsage, 30000); // Update every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  // Format currency
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 4,
+    }).format(amount);
+  };
+
+  // Format number with commas
+  const formatNumber = (num: number): string => {
+    return new Intl.NumberFormat('en-US').format(num);
+  };
+
+  // Calculate max cost for chart scaling
+  const maxDailyCost = dailyBreakdown.length > 0
+    ? Math.max(...dailyBreakdown.map(d => d.cost), 0.01)
+    : 0.01;
 
   return (
     <div className="max-w-6xl">
@@ -100,56 +165,131 @@ export default function ThePulse() {
           </div>
         </motion.div>
 
-        {/* Token Analytics - Placeholder card */}
+        {/* Token Analytics - Real metrics */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="col-span-12 lg:col-span-4 bento-card"
+          className="col-span-12 lg:col-span-8 bento-card"
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3 mb-4">
+            <Layers className="w-4 h-4 text-vg-indigo" />
             <h2 className="text-sm font-medium text-vg-text">Token Analytics</h2>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-vg-indigoLight/10 text-vg-indigoLight font-medium">
-              Coming Soon
-            </span>
           </div>
-          <div className="flex items-end gap-1 h-16">
-            {/* Mini bar chart placeholder */}
-            {[40, 65, 45, 80, 55, 70, 50].map((height, i) => (
-              <div 
-                key={i}
-                className="flex-1 bg-gradient-to-t from-vg-indigo/30 to-vg-violet/10 rounded-sm"
-                style={{ height: `${height}%` }}
-              />
-            ))}
-          </div>
-          <p className="text-[10px] text-vg-textDim mt-3">
-            Token usage visualization
-          </p>
+
+          {loading ? (
+            <div className="flex items-center justify-center h-32">
+              <p className="text-xs text-vg-textMuted">Loading...</p>
+            </div>
+          ) : tokenSummary ? (
+            <div className="space-y-4">
+              {/* Metric Cards */}
+              <div className="grid grid-cols-3 gap-3">
+                {/* Total Spend */}
+                <div className="bg-white/[0.03] rounded-lg p-3 border border-vg-border/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <DollarSign className="w-3 h-3 text-vg-textMuted" />
+                    <span className="text-[10px] text-vg-textMuted">Total Spend</span>
+                  </div>
+                  <p className="text-lg font-semibold text-vg-text">
+                    {formatCurrency(tokenSummary.totalSpend)}
+                  </p>
+                </div>
+
+                {/* Total Saved */}
+                <div className="bg-white/[0.03] rounded-lg p-3 border border-vg-border/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingDown className="w-3 h-3 text-vg-success" />
+                    <span className="text-[10px] text-vg-textMuted">Total Saved</span>
+                  </div>
+                  <p className="text-lg font-semibold text-vg-success">
+                    {formatCurrency(tokenSummary.totalSavings)}
+                  </p>
+                </div>
+
+                {/* Total Tokens */}
+                <div className="bg-white/[0.03] rounded-lg p-3 border border-vg-border/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Layers className="w-3 h-3 text-vg-textMuted" />
+                    <span className="text-[10px] text-vg-textMuted">Total Tokens</span>
+                  </div>
+                  <p className="text-lg font-semibold text-vg-text">
+                    {formatNumber(tokenSummary.totalTokens)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Daily Cost Chart */}
+              {dailyBreakdown.length > 0 && (
+                <div>
+                  <p className="text-[10px] text-vg-textMuted mb-2">Cost per Day (Last 7 Days)</p>
+                  <div className="flex items-end gap-1.5 h-20">
+                    {dailyBreakdown.map((day, i) => {
+                      const height = (day.cost / maxDailyCost) * 100;
+                      return (
+                        <div key={i} className="flex-1 flex flex-col items-center">
+                          <div
+                            className="w-full bg-gradient-to-t from-vg-indigo/50 to-vg-violet/30 rounded-sm transition-all duration-300"
+                            style={{ height: `${Math.max(height, 5)}%` }}
+                          />
+                          <p className="text-[9px] text-vg-textDim mt-1">
+                            {new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {dailyBreakdown.length === 0 && (
+                <div className="flex items-center justify-center h-20">
+                  <p className="text-[10px] text-vg-textDim">No usage data available</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-32">
+              <p className="text-xs text-vg-textMuted">No token usage data</p>
+            </div>
+          )}
         </motion.div>
 
-        {/* Quick Stats */}
+        {/* Feature Breakdown */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           className="col-span-12 lg:col-span-4 bento-card"
         >
-          <h2 className="text-sm font-medium text-vg-text mb-4">Quick Stats</h2>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-vg-textMuted">Active Prophecies</span>
-              <span className="text-sm font-mono text-vg-text">—</span>
+          <h2 className="text-sm font-medium text-vg-text mb-4">Breakdown by Feature</h2>
+          {loading ? (
+            <div className="flex items-center justify-center h-24">
+              <p className="text-xs text-vg-textMuted">Loading...</p>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-vg-textMuted">Last Analysis</span>
-              <span className="text-sm font-mono text-vg-textSecondary">—</span>
+          ) : tokenSummary ? (
+            <div className="space-y-3">
+              {Object.entries(tokenSummary.breakdownByFeature).map(([feature, data]) => (
+                <div key={feature} className="flex items-center justify-between">
+                  <span className="text-xs text-vg-textMuted">{feature}</span>
+                  <div className="flex flex-col items-end">
+                    <span className="text-sm font-mono text-vg-text">
+                      {formatCurrency(data.spend)}
+                    </span>
+                    {data.savings > 0 && (
+                      <span className="text-[10px] text-vg-success">
+                        Saved {formatCurrency(data.savings)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-vg-textMuted">Drift Score</span>
-              <span className="text-sm font-mono text-vg-success">Healthy</span>
+          ) : (
+            <div className="flex items-center justify-center h-24">
+              <p className="text-xs text-vg-textMuted">No data</p>
             </div>
-          </div>
+          )}
         </motion.div>
 
         {/* Oracle Pulse Feed - Main card with glow effect */}

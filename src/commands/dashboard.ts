@@ -5,7 +5,7 @@ import open from 'open';
 import { Watcher } from '../librarian/watcher';
 import { OracleService } from '../librarian/oracle';
 import { AutoFixService } from '../librarian/autofix';
-import { getTokenUsageHistory } from '../utils/llm';
+import { TokenTracker } from '../services/token-tracker';
 
 export async function handleDashboard() {
   const repoPath = process.cwd();
@@ -133,27 +133,19 @@ export async function handleDashboard() {
     }
   });
 
-  app.get('/api/tokens', async (req, res) => {
+  app.get('/api/token-usage', async (req, res) => {
     try {
-      const usageHistory = await getTokenUsageHistory();
+      const tracker = new TokenTracker(repoPath);
       
-      // Calculate totals by model
-      const modelStats: Record<string, { inputTokens: number; outputTokens: number; count: number }> = {};
+      // Get summary (total spend, savings, breakdown by feature)
+      const summary = await tracker.getSummary();
       
-      for (const usage of usageHistory) {
-        const key = `${usage.provider}:${usage.model}`;
-        if (!modelStats[key]) {
-          modelStats[key] = { inputTokens: 0, outputTokens: 0, count: 0 };
-        }
-        modelStats[key].inputTokens += usage.inputTokens;
-        modelStats[key].outputTokens += usage.outputTokens;
-        modelStats[key].count += 1;
-      }
+      // Get daily cost breakdown for last 7 days
+      const dailyBreakdown = await tracker.getDailyCostBreakdown(7);
       
       res.json({
-        history: usageHistory,
-        stats: modelStats,
-        total: usageHistory.length,
+        summary,
+        dailyBreakdown,
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message || 'Failed to get token usage' });

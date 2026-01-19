@@ -81,6 +81,7 @@ Task: Update the memory to reflect these changes. Ensure 'Recent Decisions' is u
       return await generateSummary(prompt, getLibrarianSystemPrompt(), {
         thinkingLevel,
         maxTokens,
+        feature: 'Librarian',
       });
     }
 
@@ -98,6 +99,7 @@ Task: Update the memory to reflect these changes. Ensure 'Recent Decisions' is u
       const summary = await generateSummary(chunkPrompt, getLibrarianSystemPrompt(), {
         thinkingLevel,
         maxTokens,
+        feature: 'Librarian',
       });
 
       summaries.push(summary);
@@ -122,6 +124,7 @@ Task: Create a single, unified PROJECT_MEMORY.md that combines all the informati
       return await generateSummary(aggregatedPrompt, getLibrarianSystemPrompt(), {
         thinkingLevel: 'flash', // Use flash for merging (routine task)
         maxTokens,
+        feature: 'Librarian',
       });
     }
 
@@ -155,6 +158,7 @@ Create a complete PROJECT_MEMORY.md with all required sections. Use today's date
     return await generateSummary(prompt, getLibrarianSystemPrompt(), {
       thinkingLevel,
       maxTokens,
+      feature: 'Librarian',
     });
   }
 
@@ -194,6 +198,7 @@ Return only the merged Markdown content, no explanations.`;
       thinkingLevel: 'flash',
       temperature: 0.2, // Lower temperature for more consistent merging
       maxTokens,
+      feature: 'Librarian',
     });
   }
 }

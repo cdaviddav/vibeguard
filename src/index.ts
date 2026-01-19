@@ -201,7 +201,7 @@ async function handleCheck() {
       // Test with minimal call - use a neutral prompt unlikely to trigger safety filters
       try {
         const model = await getModel();
-        await generateSummary('Say hello', 'You are a helpful assistant. Respond briefly.', { maxTokens: 1000 });
+        await generateSummary('Say hello', 'You are a helpful assistant. Respond briefly.', { maxTokens: 1000, feature: 'Librarian' });
         checks.push({ name: 'Librarian Health (API Key)', status: true, message: `API key is active (tested with ${model})` });
       } catch (error: any) {
         const errorMsg = error.message || 'Unknown error';
@@ -452,6 +452,7 @@ Do not include any explanations outside the Markdown format.`;
     const diagramContent = await generateSummary(prompt, systemPrompt, {
       thinkingLevel: 'pro',
       maxTokens: 10000,
+      feature: 'Librarian',
     });
     
     // Validate Mermaid syntax
@@ -481,6 +482,7 @@ CRITICAL REQUIREMENTS:
       const fixedContent = await generateSummary(fixPrompt, systemPrompt, {
         thinkingLevel: 'pro',
         maxTokens: 10000,
+        feature: 'Librarian',
       });
       
       const fixedValidation = validateMermaidSyntax(fixedContent);

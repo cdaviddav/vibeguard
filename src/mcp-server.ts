@@ -273,6 +273,7 @@ Do not include any explanations outside the Markdown format.`;
     const diagramContent = await generateSummary(prompt, systemPrompt, {
       thinkingLevel: 'pro',
       maxTokens: 10000,
+      feature: 'Librarian',
     });
 
     // Validate Mermaid syntax
@@ -298,6 +299,7 @@ CRITICAL REQUIREMENTS:
       const fixedContent = await generateSummary(fixPrompt, systemPrompt, {
         thinkingLevel: 'pro',
         maxTokens: 10000,
+        feature: 'Librarian',
       });
 
       const fixedValidation = validateMermaidSyntax(fixedContent);
@@ -483,6 +485,7 @@ Output only the 3 bullet points, no additional text.`;
     const summary = await generateSummary(summaryPrompt, systemPrompt, {
       thinkingLevel: 'pro',
       maxTokens: 10000,
+      feature: 'Librarian',
     });
 
     // Extract bullet points from summary (clean up any markdown formatting)

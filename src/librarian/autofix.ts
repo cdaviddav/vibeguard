@@ -188,6 +188,7 @@ Analyze the above prophecy and identify which files need to be changed. Return o
         thinkingLevel: 'pro',
         maxTokens: 10000,
         temperature: 0.3,
+        feature: 'AutoFix',
       });
 
       // Parse JSON array from response
@@ -255,6 +256,7 @@ Apply the suggested fix to this file. Return the complete updated file content w
         thinkingLevel: 'pro',
         maxTokens: 10000,
         temperature: 0.2,
+        feature: 'AutoFix',
       });
 
       // Extract code from markdown code blocks if present
