@@ -10,6 +10,7 @@ import { GitUtils } from './utils/git';
 import { getApiKey, getModel } from './utils/config';
 import { generateSummary } from './utils/llm';
 import { handleDashboard } from './commands/dashboard';
+import { handleInit } from './commands/init';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import simpleGit from 'simple-git';
@@ -24,24 +25,17 @@ const COMMANDS = {
 } as const;
 
 async function setupServices() {
-  // Validate API key is available
+  // Validate API key is available (backward compatibility)
+  // New init command handles this via ConfigManager
   try {
     await getApiKey();
   } catch (error: any) {
-    console.error(error.message);
-    process.exit(1);
+    // Don't exit if using new config system - let init command handle it
+    console.warn('Warning: API key not found. Run `vibeguard init` to configure.');
   }
 }
 
-async function handleInit() {
-  console.log('Initializing VibeGuard Librarian...\n');
-  
-  await setupServices();
-  const initializer = new Initializer();
-  await initializer.initialize();
-  
-  console.log('\n✅ Initialization complete! You can now run `vibeguard watch` to start monitoring.');
-}
+// handleInit is now imported from commands/init.ts
 
 async function handleWatch() {
   console.log('Starting VibeGuard Librarian watcher...\n');
@@ -644,7 +638,7 @@ For more information, visit: https://github.com/cdaviddav/vibeguard
   try {
     switch (command) {
       case COMMANDS.INIT:
-        await handleInit();
+        await handleInit(); // Uses new interactive wizard
         break;
 
       case COMMANDS.WATCH:

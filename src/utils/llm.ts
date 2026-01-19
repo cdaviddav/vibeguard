@@ -1,5 +1,8 @@
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
-import { getApiKey, getMaxTokens, getFlashModel, getProModel } from './config';
+import { ConfigManager, LLMProvider, ModelProfile } from './config-manager';
+import { getMaxTokens } from './config';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 export interface LLMOptions {
   maxTokens?: number;
@@ -7,50 +10,50 @@ export interface LLMOptions {
   temperature?: number;
 }
 
-let geminiClient: GoogleGenerativeAI | null = null;
-const modelCache: Map<string, GenerativeModel> = new Map();
+export interface TokenUsage {
+  model: string;
+  provider: LLMProvider;
+  inputTokens: number;
+  outputTokens: number;
+  timestamp: string;
+  cost?: number; // Cost in USD (optional, can be calculated later)
+}
+
+// Token tracking storage
+const TOKEN_TRACKING_FILE = path.join(process.cwd(), '.vibeguard', 'token-usage.json');
 
 /**
- * Initialize Gemini client with a specific model
+ * Track token usage for analytics
  */
-async function initializeGemini(modelName: string): Promise<GenerativeModel> {
-  // Check cache first
-  if (modelCache.has(modelName)) {
-    return modelCache.get(modelName)!;
+async function trackTokenUsage(usage: TokenUsage): Promise<void> {
+  try {
+    const trackingDir = path.dirname(TOKEN_TRACKING_FILE);
+    await fs.mkdir(trackingDir, { recursive: true });
+
+    let usageHistory: TokenUsage[] = [];
+    try {
+      const content = await fs.readFile(TOKEN_TRACKING_FILE, 'utf-8');
+      usageHistory = JSON.parse(content);
+    } catch {
+      // File doesn't exist, start fresh
+    }
+
+    usageHistory.push(usage);
+
+    // Keep only last 1000 entries to prevent file from growing too large
+    if (usageHistory.length > 1000) {
+      usageHistory = usageHistory.slice(-1000);
+    }
+
+    await fs.writeFile(
+      TOKEN_TRACKING_FILE,
+      JSON.stringify(usageHistory, null, 2),
+      'utf-8'
+    );
+  } catch (error) {
+    // Don't fail if token tracking fails
+    console.warn('[VibeGuard] Failed to track token usage:', error);
   }
-
-  const apiKey = await getApiKey();
-
-  if (!geminiClient) {
-    geminiClient = new GoogleGenerativeAI(apiKey);
-  }
-
-  const model = geminiClient.getGenerativeModel({ 
-    model: modelName,
-    safetySettings: [
-      {
-        category: 'HARM_CATEGORY_HARASSMENT' as any,
-        threshold: 'BLOCK_NONE' as any,
-      },
-      {
-        category: 'HARM_CATEGORY_HATE_SPEECH' as any,
-        threshold: 'BLOCK_NONE' as any,
-      },
-      {
-        category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT' as any,
-        threshold: 'BLOCK_NONE' as any,
-      },
-      {
-        category: 'HARM_CATEGORY_DANGEROUS_CONTENT' as any,
-        threshold: 'BLOCK_ONLY_HIGH' as any,
-      },
-    ],
-  });
-
-  // Cache the model
-  modelCache.set(modelName, model);
-
-  return model;
 }
 
 /**
@@ -63,27 +66,284 @@ export function estimateTokens(text: string): number {
 }
 
 /**
- * Generate summary with retry logic
+ * LLM Adapter Interface
+ */
+interface LLMAdapter {
+  generate(prompt: string, systemPrompt: string, options: LLMOptions): Promise<{ text: string; usage?: { inputTokens: number; outputTokens: number } }>;
+}
+
+/**
+ * Gemini Adapter
+ */
+class GeminiAdapter implements LLMAdapter {
+  private client: GoogleGenerativeAI | null = null;
+  private modelCache: Map<string, GenerativeModel> = new Map();
+
+  async initialize(apiKey: string, modelName: string): Promise<GenerativeModel> {
+    if (this.modelCache.has(modelName)) {
+      return this.modelCache.get(modelName)!;
+    }
+
+    if (!this.client) {
+      this.client = new GoogleGenerativeAI(apiKey);
+    }
+
+    const model = this.client.getGenerativeModel({
+      model: modelName,
+      safetySettings: [
+        {
+          category: 'HARM_CATEGORY_HARASSMENT' as any,
+          threshold: 'BLOCK_NONE' as any,
+        },
+        {
+          category: 'HARM_CATEGORY_HATE_SPEECH' as any,
+          threshold: 'BLOCK_NONE' as any,
+        },
+        {
+          category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT' as any,
+          threshold: 'BLOCK_NONE' as any,
+        },
+        {
+          category: 'HARM_CATEGORY_DANGEROUS_CONTENT' as any,
+          threshold: 'BLOCK_ONLY_HIGH' as any,
+        },
+      ],
+    });
+
+    this.modelCache.set(modelName, model);
+    return model;
+  }
+
+  async generate(
+    prompt: string,
+    systemPrompt: string,
+    options: LLMOptions
+  ): Promise<{ text: string; usage?: { inputTokens: number; outputTokens: number } }> {
+    const apiKey = await ConfigManager.getApiKey('google');
+    if (!apiKey) {
+      throw new Error('GEMINI_API_KEY not found. Please run `vibeguard init` to configure.');
+    }
+
+    const localConfig = await ConfigManager.loadLocalConfig();
+    const provider: LLMProvider = localConfig?.provider || 'google';
+    const profile: ModelProfile = localConfig?.profile || 'Balanced';
+    const thinkingLevel = options.thinkingLevel || 'flash';
+    const modelName = ConfigManager.getModelForProfile(provider, profile, thinkingLevel);
+
+    const model = await this.initialize(apiKey, modelName);
+    const maxTokens = options.maxTokens || await getMaxTokens();
+    const temperature = options.temperature ?? 0.3;
+
+    const fullPrompt = `${systemPrompt}\n\n${prompt}`;
+
+    const generationConfig: any = {
+      maxOutputTokens: maxTokens,
+      temperature,
+    };
+
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+      generationConfig,
+    });
+
+    const response = result.response;
+    const candidates = response.candidates || [];
+
+    if (candidates.length > 0) {
+      const finishReason = candidates[0].finishReason;
+      if (finishReason === 'SAFETY') {
+        throw new Error('Response blocked by safety filters. Consider adjusting safety settings.');
+      }
+      if (finishReason && finishReason !== 'STOP') {
+        throw new Error(`Response finished with reason: ${finishReason}`);
+      }
+    }
+
+    const text = response.text();
+    if (!text) {
+      const finishReason = candidates[0]?.finishReason || 'UNKNOWN';
+      throw new Error(`Empty response from Gemini API (finishReason: ${finishReason})`);
+    }
+
+    // Extract usage information if available
+    const usageInfo = result.response.usageMetadata();
+    const usage = usageInfo ? {
+      inputTokens: usageInfo.promptTokenCount || estimateTokens(fullPrompt),
+      outputTokens: usageInfo.candidatesTokenCount || estimateTokens(text),
+    } : {
+      inputTokens: estimateTokens(fullPrompt),
+      outputTokens: estimateTokens(text),
+    };
+
+    return { text, usage };
+  }
+}
+
+/**
+ * OpenAI Adapter
+ */
+class OpenAIAdapter implements LLMAdapter {
+  async generate(
+    prompt: string,
+    systemPrompt: string,
+    options: LLMOptions
+  ): Promise<{ text: string; usage?: { inputTokens: number; outputTokens: number } }> {
+    const apiKey = await ConfigManager.getApiKey('openai');
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY not found. Please run `vibeguard init` to configure.');
+    }
+
+    const localConfig = await ConfigManager.loadLocalConfig();
+    const provider: LLMProvider = localConfig?.provider || 'openai';
+    const profile: ModelProfile = localConfig?.profile || 'Balanced';
+    const thinkingLevel = options.thinkingLevel || 'flash';
+    const modelName = ConfigManager.getModelForProfile(provider, profile, thinkingLevel);
+
+    const maxTokens = options.maxTokens || await getMaxTokens();
+    const temperature = options.temperature ?? 0.3;
+
+    // Use fetch for OpenAI API
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: modelName,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: prompt },
+        ],
+        max_tokens: maxTokens,
+        temperature,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
+      throw new Error(`OpenAI API error: ${error.error?.message || 'Unknown error'}`);
+    }
+
+    const data = await response.json();
+    const text = data.choices[0]?.message?.content;
+
+    if (!text) {
+      throw new Error('Empty response from OpenAI API');
+    }
+
+    const usage = data.usage ? {
+      inputTokens: data.usage.prompt_tokens || estimateTokens(`${systemPrompt}\n\n${prompt}`),
+      outputTokens: data.usage.completion_tokens || estimateTokens(text),
+    } : {
+      inputTokens: estimateTokens(`${systemPrompt}\n\n${prompt}`),
+      outputTokens: estimateTokens(text),
+    };
+
+    return { text, usage };
+  }
+}
+
+/**
+ * Anthropic Adapter
+ */
+class AnthropicAdapter implements LLMAdapter {
+  async generate(
+    prompt: string,
+    systemPrompt: string,
+    options: LLMOptions
+  ): Promise<{ text: string; usage?: { inputTokens: number; outputTokens: number } }> {
+    const apiKey = await ConfigManager.getApiKey('anthropic');
+    if (!apiKey) {
+      throw new Error('ANTHROPIC_API_KEY not found. Please run `vibeguard init` to configure.');
+    }
+
+    const localConfig = await ConfigManager.loadLocalConfig();
+    const provider: LLMProvider = localConfig?.provider || 'anthropic';
+    const profile: ModelProfile = localConfig?.profile || 'Balanced';
+    const thinkingLevel = options.thinkingLevel || 'flash';
+    const modelName = ConfigManager.getModelForProfile(provider, profile, thinkingLevel);
+
+    const maxTokens = options.maxTokens || await getMaxTokens();
+    const temperature = options.temperature ?? 0.3;
+
+    // Use fetch for Anthropic API
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: modelName,
+        max_tokens: maxTokens,
+        temperature,
+        system: systemPrompt,
+        messages: [
+          { role: 'user', content: prompt },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
+      throw new Error(`Anthropic API error: ${error.error?.message || 'Unknown error'}`);
+    }
+
+    const data = await response.json();
+    const text = data.content[0]?.text;
+
+    if (!text) {
+      throw new Error('Empty response from Anthropic API');
+    }
+
+    const usage = data.usage ? {
+      inputTokens: data.usage.input_tokens || estimateTokens(`${systemPrompt}\n\n${prompt}`),
+      outputTokens: data.usage.output_tokens || estimateTokens(text),
+    } : {
+      inputTokens: estimateTokens(`${systemPrompt}\n\n${prompt}`),
+      outputTokens: estimateTokens(text),
+    };
+
+    return { text, usage };
+  }
+}
+
+/**
+ * Get the appropriate adapter based on provider
+ */
+async function getAdapter(): Promise<LLMAdapter> {
+  const localConfig = await ConfigManager.loadLocalConfig();
+  const provider: LLMProvider = localConfig?.provider || 'google';
+
+  switch (provider) {
+    case 'google':
+      return new GeminiAdapter();
+    case 'openai':
+      return new OpenAIAdapter();
+    case 'anthropic':
+      return new AnthropicAdapter();
+    default:
+      return new GeminiAdapter();
+  }
+}
+
+/**
+ * Generate summary with retry logic (Provider-Agnostic)
  */
 export async function generateSummary(
   prompt: string,
   systemPrompt: string,
   options: LLMOptions = {}
 ): Promise<string> {
-  // Determine thinking level (default to 'flash')
   const thinkingLevel = options.thinkingLevel || 'flash';
   
-  // Get appropriate model based on thinking level
-  let modelName: string;
-  let modelDisplayName: string;
-  
-  if (thinkingLevel === 'pro') {
-    modelName = await getProModel();
-    modelDisplayName = 'Gemini 3 Pro';
-  } else {
-    modelName = await getFlashModel();
-    modelDisplayName = 'Gemini 3 Flash';
-  }
+  const localConfig = await ConfigManager.loadLocalConfig();
+  const provider: LLMProvider = localConfig?.provider || 'google';
+  const profile: ModelProfile = localConfig?.profile || 'Balanced';
+  const modelName = ConfigManager.getModelForProfile(provider, profile, thinkingLevel);
+  const modelDisplayName = ConfigManager.getModelDisplayName(provider, modelName);
 
   // Log model usage
   if (thinkingLevel === 'pro') {
@@ -92,52 +352,27 @@ export async function generateSummary(
     console.error(`[VibeGuard] Using ${modelDisplayName} for Summarization...`);
   }
 
-  const model = await initializeGemini(modelName);
-  const maxTokens = options.maxTokens || await getMaxTokens();
-  const temperature = options.temperature ?? 0.3;
-
-  // Build the full prompt with system instructions
-  const fullPrompt = `${systemPrompt}\n\n${prompt}`;
-
+  const adapter = await getAdapter();
   let lastError: Error | null = null;
   const maxRetries = 3;
   const delays = [1000, 2000, 4000]; // Exponential backoff
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      const generationConfig: any = {
-        maxOutputTokens: maxTokens,
-        temperature,
-      };
-
-      const result = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
-        generationConfig,
-      });
-
-      const response = result.response;
+      const result = await adapter.generate(prompt, systemPrompt, options);
       
-      // Check finishReason to understand why response might be empty
-      const candidates = response.candidates || [];
-      if (candidates.length > 0) {
-        const finishReason = candidates[0].finishReason;
-        if (finishReason === 'SAFETY') {
-          throw new Error('Response blocked by safety filters. Consider adjusting safety settings.');
-        }
-        if (finishReason && finishReason !== 'STOP') {
-          throw new Error(`Response finished with reason: ${finishReason}`);
-        }
-      }
-      
-      const text = response.text();
-
-      if (!text) {
-        // Provide more context about why the response might be empty
-        const finishReason = candidates[0]?.finishReason || 'UNKNOWN';
-        throw new Error(`Empty response from Gemini API (finishReason: ${finishReason})`);
+      // Track token usage
+      if (result.usage) {
+        await trackTokenUsage({
+          model: modelName,
+          provider,
+          inputTokens: result.usage.inputTokens,
+          outputTokens: result.usage.outputTokens,
+          timestamp: new Date().toISOString(),
+        });
       }
 
-      return text;
+      return result.text;
     } catch (error: any) {
       lastError = error;
       
@@ -163,3 +398,14 @@ export async function generateSummary(
   throw new Error(`Failed to generate summary after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
 }
 
+/**
+ * Get token usage history
+ */
+export async function getTokenUsageHistory(): Promise<TokenUsage[]> {
+  try {
+    const content = await fs.readFile(TOKEN_TRACKING_FILE, 'utf-8');
+    return JSON.parse(content) as TokenUsage[];
+  } catch {
+    return [];
+  }
+}
