@@ -51,17 +51,105 @@ export class AutoFixService {
         };
       }
 
-      // Step 3: Create git branch
+      // Step 3: Create git branch with unique name
+      // Store original branch before switching
+      const originalBranch = await this.git.revparse(['--abbrev-ref', 'HEAD']);
+      
       const shortId = prophecyId.split('-').pop()?.substring(0, 8) || 'fix';
-      const branchName = `vibeguard/fix-${shortId}`;
+      let branchName = `vibeguard/fix-${shortId}`;
+      let branchSuffix = 0;
+      let branchCreated = false;
 
-      try {
-        await this.git.checkoutLocalBranch(branchName);
-      } catch (error: any) {
-        // Branch might already exist - checkout existing branch
-        if (error.message?.includes('already exists') || error.message?.includes('branch already exists')) {
-          await this.git.checkout(branchName);
-        } else {
+      // Find main/master branch name
+      const branches = await this.git.branchLocal();
+      const mainBranch = branches.all.find(b => b === 'main' || b === 'master') || 'main';
+
+      // Check if branch exists and make it unique if needed
+      while (true) {
+        try {
+          const branchExists = branches.all.some(b => b === branchName || b === `refs/heads/${branchName}`);
+          
+          if (!branchExists) {
+            // Branch doesn't exist, create it from main branch
+            await this.git.checkout(mainBranch);
+            await this.git.checkoutLocalBranch(branchName);
+            branchCreated = true;
+            break;
+          } else {
+            // Branch exists, check its state
+            try {
+              const branchRef = await this.git.revparse(['--abbrev-ref', branchName]);
+              const currentBranch = await this.git.revparse(['--abbrev-ref', 'HEAD']);
+              
+              // If we're already on this branch, check if it's clean
+              if (branchRef === currentBranch) {
+                const status = await this.git.status();
+                const isClean = status.files.length === 0 && 
+                               status.not_added.length === 0 &&
+                               status.modified.length === 0;
+                
+                if (isClean) {
+                  // Branch exists and is clean - check if it's at base (main) commit
+                  const mainCommit = await this.git.revparse([mainBranch]);
+                  const branchCommit = await this.git.revparse([branchName]);
+                  
+                  if (branchCommit === mainCommit) {
+                    // Branch is at base commit - safe to reuse
+                    console.warn(`[AutoFix] Branch ${branchName} already exists and is clean. Reusing it.`);
+                    branchCreated = false;
+                    break;
+                  } else {
+                    // Branch has commits - create new unique branch
+                    branchSuffix++;
+                    branchName = `vibeguard/fix-${shortId}-${branchSuffix}`;
+                    continue;
+                  }
+                } else {
+                  // Branch has uncommitted changes - create new unique branch
+                  branchSuffix++;
+                  branchName = `vibeguard/fix-${shortId}-${branchSuffix}`;
+                  continue;
+                }
+              } else {
+                // Branch exists but we're not on it - check if it's at base commit
+                const mainCommit = await this.git.revparse([mainBranch]);
+                let branchCommit: string;
+                try {
+                  branchCommit = await this.git.revparse([branchName]);
+                } catch {
+                  // Branch might not exist in current repo state, create it
+                  await this.git.checkout(mainBranch);
+                  await this.git.checkoutLocalBranch(branchName);
+                  branchCreated = true;
+                  break;
+                }
+                
+                // If branch is at the same commit as main, we can use it
+                if (branchCommit === mainCommit) {
+                  await this.git.checkout(branchName);
+                  branchCreated = false;
+                  break;
+                } else {
+                  // Branch has diverged - create new unique branch
+                  branchSuffix++;
+                  branchName = `vibeguard/fix-${shortId}-${branchSuffix}`;
+                  continue;
+                }
+              }
+            } catch (error: any) {
+              // Error checking branch state - try unique name
+              branchSuffix++;
+              branchName = `vibeguard/fix-${shortId}-${branchSuffix}`;
+              continue;
+            }
+          }
+        } catch (error: any) {
+          // If checkout fails for any reason, try unique name
+          if (error.message?.includes('already exists') || error.message?.includes('branch already exists')) {
+            branchSuffix++;
+            branchName = `vibeguard/fix-${shortId}-${branchSuffix}`;
+            continue;
+          }
           throw error;
         }
       }
@@ -71,14 +159,30 @@ export class AutoFixService {
 
       if (affectedFiles.length === 0) {
         // Switch back to original branch if no files found
-        const currentBranch = await this.gitUtils.getCurrentBranch();
-        if (currentBranch !== branchName) {
-          // Find original branch (main/master)
-          const branches = await this.gitUtils.git.branchLocal();
-          const mainBranch = branches.all.find(b => b === 'main' || b === 'master') || 'main';
-          await this.gitUtils.git.checkout(mainBranch);
-          await this.gitUtils.git.deleteLocalBranch(branchName);
+        const currentBranch = await this.git.revparse(['--abbrev-ref', 'HEAD']);
+        
+        // Only clean up if we created a new branch (not reused existing)
+        if (branchCreated && (currentBranch === branchName || currentBranch.endsWith(`/${branchName}`))) {
+          await this.git.checkout(originalBranch);
+          // Only delete if branch has no commits
+          try {
+            const branchLog = await this.git.log([branchName, '--oneline']);
+            if (branchLog.total === 0) {
+              await this.git.branch(['-D', branchName]);
+            }
+          } catch {
+            // Branch might not have any log entries, try to delete anyway
+            try {
+              await this.git.branch(['-D', branchName]);
+            } catch {
+              // Ignore deletion errors
+            }
+          }
+        } else if (currentBranch === branchName || currentBranch.endsWith(`/${branchName}`)) {
+          // If we're on the branch but didn't create it, switch back
+          await this.git.checkout(originalBranch);
         }
+        
         return {
           success: false,
           error: 'Could not identify files to fix. The prophecy may require manual intervention.',
@@ -114,13 +218,30 @@ export class AutoFixService {
 
       if (filesChanged.length === 0) {
         // No files were changed - clean up branch
-        const mainBranch = await this.gitUtils.getCurrentBranch();
-        const branches = await this.git.branchLocal();
-        const originalBranch = branches.all.find(b => b === 'main' || b === 'master') || 'main';
-        if (mainBranch === branchName) {
+        const currentBranch = await this.git.revparse(['--abbrev-ref', 'HEAD']);
+        
+        // Only clean up if we created a new branch (not reused existing)
+        if (branchCreated && (currentBranch === branchName || currentBranch.endsWith(`/${branchName}`))) {
           await this.git.checkout(originalBranch);
-          await this.git.branch(['-D', branchName]);
+          // Only delete if branch has no commits
+          try {
+            const branchLog = await this.git.log([branchName, '--oneline']);
+            if (branchLog.total === 0) {
+              await this.git.branch(['-D', branchName]);
+            }
+          } catch {
+            // Branch might not have any log entries, try to delete anyway
+            try {
+              await this.git.branch(['-D', branchName]);
+            } catch {
+              // Ignore deletion errors - branch might have commits
+            }
+          }
+        } else if (currentBranch === branchName || currentBranch.endsWith(`/${branchName}`)) {
+          // If we're on the branch but didn't create it, switch back
+          await this.git.checkout(originalBranch);
         }
+        
         return {
           success: false,
           error: 'No changes were made. The files may already be in the correct state or the fix could not be applied automatically.',
@@ -188,7 +309,6 @@ Analyze the above prophecy and identify which files need to be changed. Return o
         thinkingLevel: 'pro',
         maxTokens: 10000,
         temperature: 0.3,
-        feature: 'AutoFix',
       });
 
       // Parse JSON array from response
@@ -256,7 +376,6 @@ Apply the suggested fix to this file. Return the complete updated file content w
         thinkingLevel: 'pro',
         maxTokens: 10000,
         temperature: 0.2,
-        feature: 'AutoFix',
       });
 
       // Extract code from markdown code blocks if present

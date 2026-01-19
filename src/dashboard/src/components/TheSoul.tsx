@@ -17,11 +17,22 @@ export default function TheSoul() {
         return res.json();
       })
       .then((data) => {
-        setContent(data.content || '');
+        if (data.error) {
+          setError(data.error);
+          console.error('[TheSoul] API error:', data.error);
+        } else {
+          const content = data.content || '';
+          setContent(content);
+          if (content) {
+            console.log('[TheSoul] Loaded content, length:', content.length);
+          } else {
+            console.warn('[TheSoul] Content is empty');
+          }
+        }
         setLoading(false);
       })
       .catch((err) => {
-        setError(err.message);
+        setError(err.message || 'Failed to load PROJECT_MEMORY.md');
         setLoading(false);
       });
   }, []);
@@ -74,7 +85,48 @@ export default function TheSoul() {
         className="bento-card border-vg-error/30 shadow-glow-error"
       >
         <h2 className="text-vg-error font-medium text-sm mb-2">Error Loading Soul</h2>
-        <p className="text-vg-textMuted text-xs">{error}</p>
+        <p className="text-vg-textMuted text-xs mb-2">{error}</p>
+        <p className="text-vg-textMuted text-xs">
+          Make sure PROJECT_MEMORY.md exists in the project root.
+        </p>
+      </motion.div>
+    );
+  }
+
+  // Check for empty content
+  if (!loading && !error && (!content || content.trim().length === 0)) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-6xl"
+      >
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6"
+        >
+          <div className="flex items-center gap-3 mb-1">
+            <Brain className="w-5 h-5 text-vg-indigo" />
+            <h1 className="text-xl font-semibold text-gradient">The Soul</h1>
+          </div>
+          <p className="text-xs text-vg-textMuted ml-8">
+            Persistent project memory • PROJECT_MEMORY.md
+          </p>
+        </motion.div>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bento-card border-vg-warning/30"
+        >
+          <h2 className="text-vg-warning font-medium text-sm mb-2">Empty PROJECT_MEMORY.md</h2>
+          <p className="text-vg-textMuted text-xs mb-2">
+            The PROJECT_MEMORY.md file exists but is empty.
+          </p>
+          <p className="text-vg-textMuted text-xs">
+            Run <code className="px-1.5 py-0.5 bg-vg-bgSecondary rounded text-vg-textSecondary font-mono text-xs">vibeguard init</code> to initialize it.
+          </p>
+        </motion.div>
       </motion.div>
     );
   }

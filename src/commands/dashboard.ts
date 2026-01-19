@@ -31,10 +31,34 @@ export async function handleDashboard() {
   app.get('/api/soul', async (req, res) => {
     try {
       const soulPath = path.join(repoPath, 'PROJECT_MEMORY.md');
+      
+      // Check if file exists
+      try {
+        await fs.access(soulPath);
+      } catch {
+        return res.status(404).json({ 
+          error: 'PROJECT_MEMORY.md not found',
+          content: ''
+        });
+      }
+      
       const content = await fs.readFile(soulPath, 'utf-8');
+      
+      // Return empty content if file is empty
+      if (!content || content.trim().length === 0) {
+        return res.json({ 
+          content: '',
+          isEmpty: true 
+        });
+      }
+      
       res.json({ content });
     } catch (error: any) {
-      res.status(500).json({ error: error.message || 'Failed to read PROJECT_MEMORY.md' });
+      console.error('[Dashboard] Error reading PROJECT_MEMORY.md:', error);
+      res.status(500).json({ 
+        error: error.message || 'Failed to read PROJECT_MEMORY.md',
+        content: ''
+      });
     }
   });
   
