@@ -199,6 +199,48 @@ async function checkExistingConfig(): Promise<boolean> {
 }
 
 /**
+ * Check for existing .mdc files and handle version conflicts
+ */
+async function checkExistingMdcFiles(repoPath: string): Promise<{ hasExisting: boolean; shouldUpdate: boolean }> {
+  const rulesDir = path.join(repoPath, '.cursor', 'rules');
+  const governancePath = path.join(rulesDir, 'governance.mdc');
+  const visualizerPath = path.join(rulesDir, 'visualizer.mdc');
+  
+  let hasExisting = false;
+  
+  try {
+    await fs.access(governancePath);
+    hasExisting = true;
+  } catch {
+    // File doesn't exist
+  }
+  
+  try {
+    await fs.access(visualizerPath);
+    hasExisting = true;
+  } catch {
+    // File doesn't exist
+  }
+  
+  if (!hasExisting) {
+    return { hasExisting: false, shouldUpdate: true };
+  }
+  
+  // Check if files contain version info or are from a different version
+  // For now, we'll prompt the user
+  const { update } = await inquirer.prompt<{ update: boolean }>([
+    {
+      type: 'confirm',
+      name: 'update',
+      message: 'Existing .mdc files found in .cursor/rules/. Update to latest version?',
+      default: true,
+    },
+  ]);
+  
+  return { hasExisting: true, shouldUpdate: update };
+}
+
+/**
  * Generate governance.mdc cursor rule
  */
 async function generateGovernanceRule(repoPath: string): Promise<void> {
@@ -387,10 +429,21 @@ export async function handleInit(): Promise<void> {
     // Migrate legacy .cursorrules if exists
     await migrateLegacyCursorRules(repoPath);
     
-    // Generate governance and visualizer rules
-    await generateGovernanceRule(repoPath);
-    await generateVisualizerRule(repoPath);
-    console.log('✅ Cursor rules generated in .cursor/rules/\n');
+    // Check for existing .mdc files and handle version conflicts
+    const { hasExisting, shouldUpdate } = await checkExistingMdcFiles(repoPath);
+    
+    if (hasExisting && !shouldUpdate) {
+      console.log('⏭️  Skipping .mdc file generation (existing files preserved)\n');
+    } else {
+      if (hasExisting) {
+        console.log('🔄 Updating existing .mdc files to latest version...\n');
+      }
+      
+      // Generate governance and visualizer rules
+      await generateGovernanceRule(repoPath);
+      await generateVisualizerRule(repoPath);
+      console.log('✅ Cursor rules generated in .cursor/rules/\n');
+    }
 
     // Step 4: Initialize PROJECT_MEMORY.md
     console.log('🚀 Step 4: Initializing PROJECT_MEMORY.md...\n');

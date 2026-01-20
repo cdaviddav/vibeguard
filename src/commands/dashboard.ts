@@ -1,4 +1,5 @@
 import express from 'express';
+import sirv from 'sirv';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import open from 'open';
@@ -6,28 +7,88 @@ import { Watcher } from '../librarian/watcher';
 import { OracleService } from '../librarian/oracle';
 import { AutoFixService } from '../librarian/autofix';
 import { TokenTracker } from '../services/token-tracker';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+// ES module equivalent of __dirname for path resolution
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Resolve dashboard path - works whether installed via npm or run via npx
+async function resolveDashboardPath(): Promise<string> {
+  // When installed: node_modules/@vibeguard/cli/dist/commands/dashboard.js
+  // Dashboard should be at: node_modules/@vibeguard/cli/dashboard/dist
+  // From dist/commands/, go up to dist/, then up to package root, then into dashboard/dist
+  
+  let currentDir = __dirname; // dist/commands/
+  const maxDepth = 10;
+  let depth = 0;
+  
+  // First, try to find package root by looking for package.json
+  while (depth < maxDepth) {
+    const packageJsonPath = path.join(currentDir, 'package.json');
+    try {
+      await fs.access(packageJsonPath);
+      // Found package root, check for dashboard/dist
+      const dashboardPath = path.join(currentDir, 'dashboard', 'dist');
+      try {
+        await fs.access(dashboardPath);
+        return dashboardPath;
+      } catch {
+        // Package root found but no dashboard, continue search
+      }
+    } catch {
+      // Not package root, continue
+    }
+    
+    // Go up one level
+    const parent = path.dirname(currentDir);
+    if (parent === currentDir) {
+      break;
+    }
+    currentDir = parent;
+    depth++;
+  }
+  
+  // Fallback 1: Try relative to dist/commands/ -> go up to package root
+  // dist/commands/ -> dist/ -> package root -> dashboard/dist
+  const fromCommands = path.join(__dirname, '..', '..', 'dashboard', 'dist');
+  try {
+    await fs.access(fromCommands);
+    return fromCommands;
+  } catch {
+    // Continue to next fallback
+  }
+  
+  // Fallback 2: Try relative to process.cwd() (for development)
+  const devPath = path.join(process.cwd(), 'dist', 'dashboard');
+  try {
+    await fs.access(devPath);
+    return devPath;
+  } catch {
+    throw new Error('Dashboard not found. Please run `npm run build` first.');
+  }
+}
 
 export async function handleDashboard() {
   const repoPath = process.cwd();
   const app = express();
   
-  // Find available port starting from 3000
-  const PORT = await findFreePort(3000);
+  // Use port 5000 as specified
+  const PORT = 5000;
   
-  // Serve static files from dist/dashboard
-  const dashboardPath = path.join(repoPath, 'dist', 'dashboard');
+  // Resolve dashboard path using import.meta for correct path resolution
+  const dashboardPath = await resolveDashboardPath();
   
   // Check if dashboard is built
   try {
     await fs.access(dashboardPath);
   } catch (error) {
-    console.error('❌ Dashboard not built. Please run `npm run build:dashboard` first.');
+    console.error('❌ Dashboard not built. Please run `npm run build` first.');
     process.exit(1);
   }
   
-  app.use(express.static(dashboardPath));
-  
-  // API Endpoints
+  // API Endpoints (must come before sirv to avoid route conflicts)
   app.get('/api/soul', async (req, res) => {
     try {
       const soulPath = path.join(repoPath, 'PROJECT_MEMORY.md');
@@ -176,10 +237,8 @@ export async function handleDashboard() {
     }
   });
   
-  // SPA fallback - serve index.html for all other routes
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(dashboardPath, 'index.html'));
-  });
+  // Use sirv to serve static files (SPA fallback handled by sirv's single option)
+  app.use(sirv(dashboardPath, { dev: false, single: true }));
   
   // Start server
   const server = app.listen(PORT, () => {
@@ -210,28 +269,4 @@ export async function handleDashboard() {
   });
 }
 
-/**
- * Find the first available port starting from the given port
- */
-async function findFreePort(startPort: number): Promise<number> {
-  const net = await import('net');
-  
-  return new Promise((resolve, reject) => {
-    const server = net.createServer();
-    
-    server.listen(startPort, () => {
-      const port = (server.address() as net.AddressInfo)?.port || startPort;
-      server.close(() => resolve(port));
-    });
-    
-    server.on('error', (err: NodeJS.ErrnoException) => {
-      if (err.code === 'EADDRINUSE') {
-        // Port is in use, try next port
-        findFreePort(startPort + 1).then(resolve).catch(reject);
-      } else {
-        reject(err);
-      }
-    });
-  });
-}
 

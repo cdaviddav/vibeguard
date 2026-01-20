@@ -134,7 +134,7 @@ VibeGuard is in Open Beta. We move fast and break things—help us fix them.
 
 VibeGuard stores keys globally in `~/.vibeguard/config.json`.
 
-**Fix**: Run `vibeguard init --reconfigure` to re-enter your keys.
+**Fix**: Run `getvibeguard init --reconfigure` to re-enter your keys.
 
 **Pro-Tip**: If you prefer environment variables, VibeGuard will prioritize `GOOGLE_API_KEY`, `OPENAI_API_KEY`, or `ANTHROPIC_API_KEY` if they are set in your shell.
 
@@ -149,15 +149,15 @@ If `DIAGRAM.md` shows raw text instead of a chart:
 
 If your "Pulse" dashboard shows a spike in spend:
 
-- **Check your Profile**: You may be on "High-IQ" mode. Switch to "Balanced" or "Economy" using `vibeguard init` to use Flash models for routine summaries.
+- **Check your Profile**: You may be on "High-IQ" mode. Switch to "Balanced" or "Economy" using `getvibeguard init` to use Flash models for routine summaries.
 - **Large Commits**: Avoid staging massive binary files or `node_modules`. VibeGuard respects `.gitignore`, but heavy text files can still consume tokens.
 
 ### "Unknown Command" Errors
 
-If you see `command not found: vibeguard`:
+If you see `command not found: getvibeguard`:
 
-- Ensure you installed it globally: `npm install -g @vibeguard/cli`.
-- If using `npx`, run `npx vibeguard@latest <command>`.
+- Ensure you installed it globally: `npm install -g @getvibeguard/cli`.
+- If using `npx`, run `npx getvibeguard@latest <command>`.
 
 ---
 

@@ -1,12 +1,14 @@
 {
-  "name": "vibeguard",
+  "name": "@getvibeguard/cli",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cd src/dashboard && npm run build && cd ../.. && node scripts/copy-dashboard.js && node scripts/copy-dashboard-for-npm.js",
     "build:dashboard": "cd src/dashboard && npm run build && cd ../.. && node scripts/copy-dashboard.js",
-    "dev": "tsx src/index.ts",
-    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build",
+    "dev": "tsx src/cli.ts",
+    "start": "node dist/cli.js",
     "start:mcp": "tsx src/mcp-server.ts"
   },
   "repository": {
@@ -15,7 +17,13 @@
   },
   "author": "Christopher David",
   "license": "ISC",
-  "type": "commonjs",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist/",
+    "dashboard/dist/"
+  ],
   "bugs": {
     "url": "https://github.com/cdaviddav/vibeguard/issues"
   },
@@ -29,10 +37,11 @@
     "inquirer": "^9.2.15",
     "open": "^10.1.0",
     "simple-git": "^3.30.0",
+    "sirv": "^2.0.4",
     "write-file-atomic": "^5.0.0"
   },
   "bin": {
-    "vibeguard": "./dist/index.js"
+    "vibeguard": "./dist/cli.js"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
