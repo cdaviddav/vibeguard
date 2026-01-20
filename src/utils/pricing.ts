@@ -174,3 +174,39 @@ export function calculateProCost(
   return calculateCost(proModelName, inputTokens, outputTokens);
 }
 
+/**
+ * Calculate hypothetical "High-IQ" cost (Pro/Opus tier) for any model
+ * Used for savings calculation: compares actual cost vs High-IQ tier
+ */
+export function calculateHighIqCost(
+  modelName: string,
+  provider: 'google' | 'openai' | 'anthropic',
+  inputTokens: number,
+  outputTokens: number
+): number {
+  // Determine High-IQ model name for the provider
+  let highIqModelName: string;
+  
+  switch (provider) {
+    case 'google':
+      highIqModelName = 'gemini-3-pro';
+      break;
+    case 'openai':
+      highIqModelName = 'gpt-4o'; // Maps to gpt-5 pricing
+      break;
+    case 'anthropic':
+      // Anthropic Opus pricing (approximate - adjust based on actual pricing)
+      // Using conservative estimates: Opus is typically 2-3x more expensive than Sonnet
+      // For now, use a multiplier approach or return 0 if we don't have pricing
+      // Since we don't have Anthropic in pricing map yet, estimate based on common rates
+      // Opus: ~$15/1M input, ~$75/1M output (approximate)
+      const anthropicInputCost = (inputTokens / 1_000_000) * 15.00;
+      const anthropicOutputCost = (outputTokens / 1_000_000) * 75.00;
+      return anthropicInputCost + anthropicOutputCost;
+    default:
+      return 0;
+  }
+  
+  return calculateCost(highIqModelName, inputTokens, outputTokens);
+}
+

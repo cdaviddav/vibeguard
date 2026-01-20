@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import writeFileAtomic from 'write-file-atomic';
-import { calculateCost, calculateProCost, isFlashModel } from '../utils/pricing';
+import { calculateCost, calculateHighIqCost, isFlashModel } from '../utils/pricing';
 import { LLMProvider } from '../utils/config-manager';
 
 export type Feature = 'Librarian' | 'Oracle' | 'AutoFix';
@@ -50,13 +50,12 @@ export class TokenTracker {
       // Calculate actual cost
       const cost = calculateCost(params.model, params.inputTokens, params.outputTokens);
       
-      // Calculate savings if Flash model was used
+      // Calculate savings by comparing actual cost vs hypothetical "High-IQ" model cost
+      // High-IQ = Pro/Opus models (most expensive tier)
       let savings: number | undefined = undefined;
-      if (isFlashModel(params.model)) {
-        const proCost = calculateProCost(params.model, params.inputTokens, params.outputTokens);
-        if (proCost > 0) {
-          savings = proCost - cost;
-        }
+      const highIqCost = calculateHighIqCost(params.model, params.provider, params.inputTokens, params.outputTokens);
+      if (highIqCost > 0 && highIqCost > cost) {
+        savings = highIqCost - cost;
       }
 
       const logEntry: TokenUsageLog = {

@@ -6,9 +6,26 @@ import { Initializer } from '../librarian/initializer';
 import { MemoryManager } from '../librarian/memory-manager';
 
 /**
- * Show branding
+ * Show branding with ASCII logo
  */
 function showBranding(): void {
+  const logo = `
+╔═══════════════════════════════════════╗
+║                                       ║
+║    ██╗   ██╗██╗██████╗ ███████╗      ║
+║    ██║   ██║██║██╔══██╗██╔════╝      ║
+║    ██║   ██║██║██████╔╝█████╗        ║
+║    ╚██╗ ██╔╝██║██╔══██╗██╔══╝        ║
+║     ╚████╔╝ ██║██████╔╝███████╗      ║
+║      ╚═══╝  ╚═╝╚═════╝ ╚══════╝      ║
+║                                       ║
+║    ╔═══════════════════════════════╗  ║
+║    ║   Project Intelligence Engine  ║  ║
+║    ╚═══════════════════════════════╝  ║
+║                                       ║
+╚═══════════════════════════════════════╝
+`;
+  console.log(logo);
   console.log('Welcome to VibeGuard! Let\'s set up your project.\n');
 }
 
@@ -199,6 +216,153 @@ async function checkExistingConfig(): Promise<boolean> {
 }
 
 /**
+ * Generate governance.mdc cursor rule
+ */
+async function generateGovernanceRule(repoPath: string): Promise<void> {
+  const rulesDir = path.join(repoPath, '.cursor', 'rules');
+  await fs.mkdir(rulesDir, { recursive: true });
+  
+  const governanceContent = `# VibeGuard Governance Rules
+
+**Always Apply** | **Globs:** \`src/**/*\`
+
+## Core Protocol
+
+Before any task:
+1. Call \`get_core_context\` to refresh project memory and architecture understanding.
+2. Read \`DIAGRAM.md\` to map component dependencies and relationships.
+3. Respect the "Pinned Files" logic from PROJECT_MEMORY.md; do not propose changes that contradict pinned file requirements without explicitly mentioning the conflict.
+
+During task execution:
+- Follow the architectural patterns established in DIAGRAM.md.
+- Maintain consistency with existing code structure and conventions.
+
+After completing a task:
+1. Use \`update_project_memory\` to record the change.
+2. Group related changes into a single "Atomic Update" entry in Recent Decisions.
+3. If modifying architecture, consider whether DIAGRAM.md needs regeneration (run \`vibeguard visualize\`).
+
+## Memory Management
+
+- **Atomic Updates**: Group logically related changes into single entries (e.g., "Added X feature with Y and Z components").
+- **Pruning Logic**: If Recent Decisions exceeds 15 entries, summarize the oldest 5 into a single "Legacy Decisions" bullet point before adding new ones.
+- **Section Appending**: Use \`update_project_memory\` with the appropriate section name to maintain organized memory structure.
+
+## Conflict Resolution
+
+If proposed changes contradict:
+- Pinned Files logic → Mention the conflict explicitly and explain why the change is necessary.
+- Existing architecture in DIAGRAM.md → Consider updating the diagram if the change is intentional.
+- Recent Decisions → Reference the conflicting decision and explain the evolution.
+
+## Safety
+
+Do not propose changes that would:
+- Break existing functionality without explicit user approval.
+- Violate the project's architectural boundaries without discussion.
+- Overwrite or ignore Pinned Files without acknowledgment.
+`;
+
+  await fs.writeFile(
+    path.join(rulesDir, 'governance.mdc'),
+    governanceContent,
+    'utf-8'
+  );
+}
+
+/**
+ * Generate visualizer.mdc cursor rule
+ */
+async function generateVisualizerRule(repoPath: string): Promise<void> {
+  const rulesDir = path.join(repoPath, '.cursor', 'rules');
+  await fs.mkdir(rulesDir, { recursive: true });
+  
+  const visualizerContent = `# VibeGuard Visual Soul Styling Rules
+
+**Apply Intelligently** | **Globs:** \`DIAGRAM.md\`
+
+## Staleness Check Protocol
+
+Before calling \`get_core_context\` or reading DIAGRAM.md:
+1. Check if files in \`src/\` directory are newer than \`DIAGRAM.md\`.
+2. If stale (src/ is newer), automatically run \`vibeguard visualize\` to regenerate the diagram.
+3. Wait for diagram regeneration to complete before proceeding with context retrieval.
+
+This ensures architecture diagrams are always up-to-date with the codebase.
+
+## Mermaid Diagram Styling
+
+When generating or updating DIAGRAM.md, apply the following styling rules:
+
+### Color Scheme
+- **Internal Logic**: Light Green (#e8f5e9) - Use for internal components, services, and business logic.
+- **External Services**: Light Blue (#e1f5fe) - Use for APIs, external integrations, and third-party services.
+- **Persistence/Storage**: Soft Amber (#fff8e1) - Use for databases, file systems, and data storage.
+
+### Layout Rules
+- **Overall Direction**: Use \`direction TB\` (Top-Bottom) for the main diagram flow.
+- **Subgraphs**: Use \`direction LR\` (Left-Right) for subgraph layouts to improve readability.
+- **Class Definitions**: Apply classDef for consistent styling across similar node types.
+
+### Syntax Validation
+
+Before writing DIAGRAM.md:
+1. Ensure all Mermaid syntax is valid (balanced brackets, closed subgraphs).
+2. Test that the diagram renders correctly.
+3. If syntax errors are detected, fix immediately before saving.
+
+### Example Structure
+
+\`\`\`mermaid
+flowchart TB
+    classDef internal fill:#e8f5e9,stroke:#4caf50,stroke-width:2px
+    classDef external fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
+    classDef storage fill:#fff8e1,stroke:#f57c00,stroke-width:2px
+    
+    subgraph ExternalServices [External Services]
+        API[External API]
+    end
+    
+    subgraph InternalLogic [Internal Logic]
+        Service[Core Service]
+    end
+    
+    subgraph Persistence [Storage]
+        DB[(Database)]
+    end
+    
+    class API external
+    class Service internal
+    class DB storage
+\`\`\`
+`;
+
+  await fs.writeFile(
+    path.join(rulesDir, 'visualizer.mdc'),
+    visualizerContent,
+    'utf-8'
+  );
+}
+
+/**
+ * Handle legacy .cursorrules migration
+ */
+async function migrateLegacyCursorRules(repoPath: string): Promise<void> {
+  const legacyRulesPath = path.join(repoPath, '.cursorrules');
+  
+  try {
+    await fs.access(legacyRulesPath);
+    // Legacy file exists, rename it
+    const backupPath = path.join(repoPath, '.cursorrules.bak');
+    await fs.rename(legacyRulesPath, backupPath);
+    console.log('✅ Migrated legacy .cursorrules to .cursorrules.bak');
+    console.log('   VibeGuard now uses .cursor/rules/*.mdc format for better organization.\n');
+  } catch {
+    // File doesn't exist, nothing to migrate
+  }
+}
+
+/**
  * Main init command handler
  */
 export async function handleInit(): Promise<void> {
@@ -232,6 +396,18 @@ export async function handleInit(): Promise<void> {
     };
     await ConfigManager.saveLocalConfig(localConfig);
     console.log('\n✅ Configuration saved to .vibeguard/settings.json\n');
+
+    // Step 3.5: Generate Cursor Rules
+    console.log('⚙️  Step 3.5: Generating Cursor Rules...\n');
+    const repoPath = process.cwd();
+    
+    // Migrate legacy .cursorrules if exists
+    await migrateLegacyCursorRules(repoPath);
+    
+    // Generate governance and visualizer rules
+    await generateGovernanceRule(repoPath);
+    await generateVisualizerRule(repoPath);
+    console.log('✅ Cursor rules generated in .cursor/rules/\n');
 
     // Step 4: Initialize PROJECT_MEMORY.md
     console.log('🚀 Step 4: Initializing PROJECT_MEMORY.md...\n');

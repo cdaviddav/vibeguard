@@ -184,7 +184,7 @@ export default function ThePulse() {
           ) : tokenSummary ? (
             <div className="space-y-4">
               {/* Metric Cards */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-3">
                 {/* Total Spend */}
                 <div className="bg-white/[0.03] rounded-lg p-3 border border-vg-border/30">
                   <div className="flex items-center gap-2 mb-2">
@@ -196,7 +196,7 @@ export default function ThePulse() {
                   </p>
                 </div>
 
-                {/* Total Saved */}
+                {/* Total Saved (VibeGuard ROI) */}
                 <div className="bg-white/[0.03] rounded-lg p-3 border border-vg-border/30">
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingDown className="w-3 h-3 text-vg-success" />
@@ -205,6 +205,25 @@ export default function ThePulse() {
                   <p className="text-lg font-semibold text-vg-success">
                     {formatCurrency(tokenSummary.totalSavings)}
                   </p>
+                  <p className="text-[9px] text-vg-textDim mt-1">VibeGuard ROI</p>
+                </div>
+
+                {/* Token Efficiency */}
+                <div className="bg-white/[0.03] rounded-lg p-3 border border-vg-border/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Zap className="w-3 h-3 text-vg-indigo" />
+                    <span className="text-[10px] text-vg-textMuted">Efficiency</span>
+                  </div>
+                  <p className="text-lg font-semibold text-vg-indigo">
+                    {(() => {
+                      const totalHighIqCost = tokenSummary.totalSpend + tokenSummary.totalSavings;
+                      if (totalHighIqCost > 0) {
+                        return `${Math.round((tokenSummary.totalSavings / totalHighIqCost) * 100)}%`;
+                      }
+                      return '0%';
+                    })()}
+                  </p>
+                  <p className="text-[9px] text-vg-textDim mt-1">vs High-IQ</p>
                 </div>
 
                 {/* Total Tokens */}
