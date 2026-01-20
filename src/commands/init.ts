@@ -9,23 +9,6 @@ import { MemoryManager } from '../librarian/memory-manager';
  * Show branding with ASCII logo
  */
 function showBranding(): void {
-  const logo = `
-╔═══════════════════════════════════════╗
-║                                       ║
-║    ██╗   ██╗██╗██████╗ ███████╗      ║
-║    ██║   ██║██║██╔══██╗██╔════╝      ║
-║    ██║   ██║██║██████╔╝█████╗        ║
-║    ╚██╗ ██╔╝██║██╔══██╗██╔══╝        ║
-║     ╚████╔╝ ██║██████╔╝███████╗      ║
-║      ╚═══╝  ╚═╝╚═════╝ ╚══════╝      ║
-║                                       ║
-║    ╔═══════════════════════════════╗  ║
-║    ║   Project Intelligence Engine  ║  ║
-║    ╚═══════════════════════════════╝  ║
-║                                       ║
-╚═══════════════════════════════════════╝
-`;
-  console.log(logo);
   console.log('Welcome to VibeGuard! Let\'s set up your project.\n');
 }
 
@@ -412,7 +395,6 @@ export async function handleInit(): Promise<void> {
     // Step 4: Initialize PROJECT_MEMORY.md
     console.log('🚀 Step 4: Initializing PROJECT_MEMORY.md...\n');
     
-    const repoPath = process.cwd();
     const initializer = new Initializer(repoPath);
     const memoryManager = new MemoryManager(repoPath);
 
