@@ -26,5 +26,5 @@ Thumbs.db
 *.log
 npm-debug.log*
 
-# project memory
-DIAGRAM.md
+# Build artifacts
+src/dashboard/dist/

@@ -103,17 +103,11 @@ export function usePulse() {
     setProphecies((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
-  // Function to add a new prophecy (for testing or real-time updates)
-  const addProphecy = useCallback((prophecy: Prophecy) => {
-    setProphecies((prev) => [prophecy, ...prev]);
-  }, []);
-
   return {
     prophecies,
     loading,
     error,
     acknowledgeProphecy,
-    addProphecy,
   };
 }
 
