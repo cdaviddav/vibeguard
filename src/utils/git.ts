@@ -272,9 +272,17 @@ export class GitUtils {
 
   /**
    * Stage a file
+   * Automatically removes the file from .gitignore if it's currently ignored
    */
   async stageFile(filePath: string): Promise<void> {
     const relativePath = path.relative(this.repoPath, filePath).replace(/\\/g, '/');
+    
+    // Check if file is in .gitignore and remove it if needed
+    const isIgnored = await this.isInGitignore(filePath);
+    if (isIgnored) {
+      await this.removeFromGitignore(filePath);
+    }
+    
     await this.git.add(relativePath);
   }
 

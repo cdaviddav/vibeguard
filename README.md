@@ -1,223 +1,166 @@
-# VibeGuard - The Librarian
+# 🛡️ VibeGuard
 
-A context management tool for AI-assisted coding that watches Git history, captures architectural changes, and maintains a persistent `PROJECT_MEMORY.md` using Gemini 3 Flash for summarization.
+**The Autonomous Architect for the Vibe Coding Era.**
 
-## Features
+Stop reminding Cursor what you're building. VibeGuard is an AI-powered governance engine that watches your code, maintains your project's "Soul," and proactively alerts you when you drift from your architectural intent.
 
-- **Git-Aware**: Automatically monitors commits and extracts architectural insights
-- **Three-Tier Initialization**: Smart cold-start with oneline sweep, deep context, and skeleton scan
-- **High-Density Memory**: Maintains a concise "Single Source of Truth" for AI coding assistants
-- **Auto-Staging**: Keeps `PROJECT_MEMORY.md` in sync with your code
-- **Conflict Resolution**: Automatically merges Git conflicts using AI
-- **MCP Protocol Support**: Native Model Context Protocol (MCP) server for direct integration with Cursor, Claude Desktop, and other AI IDEs
-- **Dashboard**: Visual web interface with "The Soul", "The Map", and "The Pulse" views for real-time project insights
-- **Oracle**: Architectural drift detection that identifies violations, refactors, and optimizations
-- **AutoFix**: AI-powered automatic refactoring engine that creates isolated Git branches for fixes
-- **Heartbeat**: Quiet reflection service that triggers oracle analysis during inactivity periods
+---
 
+## 🧠 What is VibeGuard?
 
-## AI Assistant Integration
-VibeGuard provides an MCP server so your AI can "read" its own memory automatically.
+In the age of AI-driven development, context is everything. But as projects grow, context windows get cluttered, AI becomes forgetful, and architectural drift sets in. VibeGuard solves this by maintaining a stateful, high-density memory of your project. It doesn't just store files; it synthesizes your intent.
 
-### Connecting to Cursor
-1. Go to **Cursor Settings > Features > MCP**.
-2. Add a new server:
-   - **Name**: VibeGuard
-   - **Type**: `command`
-   - **Command**: `npx tsx src/mcp-server.ts`
+### The Three-Tier Engine
 
+- **📚 The Librarian**: Watches your Git commits and automatically synthesizes changes into `PROJECT_MEMORY.md`. It prunes noise and keeps the most important architectural decisions front-and-center.
+- **🔮 The Oracle**: Proactively scans for "Drift." It identifies when new code violates your core rules or tech-stack constraints before you even open a PR.
+- **🎨 The Visual Soul**: Generates and maintains a real-time `DIAGRAM.md` using Mermaid, ensuring you always have a "Skeleton View" of your system.
 
+---
 
-## Installation
+## ✨ Features
 
-```bash
-npm install
-```
+| Feature | Description |
+|---------|-------------|
+| **Atomic Memory** | High-density context management that saves up to 80% on token usage. |
+| **Drift Detection** | Proactive alerts when your code deviates from the project's "Soul." |
+| **Auto-Fix** | One-click branch generation and refactoring to realign with architectural rules. |
+| **Visual Architecture** | Auto-generated Mermaid diagrams that evolve with every commit. |
+| **Token Analytics** | Real-time dashboard showing your AI spend vs. savings using smart model routing. |
+| **Universal LLM** | Use your own keys. Supports Gemini 3, GPT-5, and Claude 4.5. |
 
-## Configuration
+---
 
-VibeGuard uses a hybrid configuration strategy with priority order:
+## 🚀 Quick Start
 
-1. **Environment Variable** (CI/CD, power users):
-   ```bash
-   export GEMINI_API_KEY=your-api-key
-   export VIBEGUARD_MAX_TOKENS=8000  # Optional: max output tokens (default: 30000)
-   ```
+Get VibeGuard up and running in your project in under 60 seconds.
 
-2. **`.env` File** (Vibe Coding default):
-   ```bash
-   # Create .env file in project root
-   # Add your configuration:
-   GEMINI_API_KEY=your-api-key
-   VIBEGUARD_MAX_TOKENS=8000
-   ```
-
-3. **Global Config** (cross-project):
-   ```bash
-   mkdir -p ~/.config/vibeguard
-   echo '{"geminiApiKey": "your-api-key", "maxTokens": 8000}' > ~/.config/vibeguard/config.json
-   ```
-
-### Getting Your Gemini API Key
-
-1. Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
-2. Create a new API key
-3. Add it to one of the configuration methods above
-
-## Usage
-
-### Initialize (First Time)
-
-Run the three-tier initialization to create `PROJECT_MEMORY.md`:
+### 1. Install the CLI
 
 ```bash
-npm run dev init
-# or after building:
-npm run build
-node dist/index.js init
+npm install -g @vibeguard/cli
 ```
 
-This will:
-- **Tier 1**: Analyze commit history locally (0 tokens)
-- **Tier 2**: Process last 5-10 commits with Gemini (mid-cost)
-- **Tier 3**: Infer architecture from file structure (high value)
+### 2. Initialize Your Project
 
-### Watch Mode
-
-Start watching for new commits:
+Run the setup wizard in your project root. This will configure your API keys, model profiles, and generate your custom Cursor `.mdc` rules.
 
 ```bash
-npm run dev watch
+vibeguard init
 ```
 
-The watcher will:
-- Monitor `.git/HEAD` and `.git/index` for changes
-- Process new commits automatically
-- Update `PROJECT_MEMORY.md` and stage it in Git
+### 3. Start the Watcher
 
-### Manual Sync
-
-Process the latest commit(s) manually:
+VibeGuard will now monitor your changes and manage your project memory in the background.
 
 ```bash
-npm run dev sync
+vibeguard watch
 ```
 
-### Deep Sync
+---
 
-Process full Git history (token-intensive):
+## 📋 Commands Reference
+
+VibeGuard provides a comprehensive CLI for managing your project's context and architecture.
+
+| Command | Description |
+|---------|-------------|
+| `vibeguard init` | Run the interactive setup wizard to configure API keys, select your LLM provider (Google/OpenAI/Anthropic), choose a model profile (Economy/Balanced/High-IQ), and generate custom Cursor `.mdc` rules. Also creates `PROJECT_MEMORY.md` with your project's "Soul" description. |
+| `vibeguard watch` | Start the background watcher that monitors Git commits and automatically updates `PROJECT_MEMORY.md`. The watcher also runs the Oracle service for drift detection and tracks token usage. Press Ctrl+C to stop. |
+| `vibeguard sync` | Manually process the latest commit(s) and update project memory. Useful for one-off synchronization without starting the watcher. |
+| `vibeguard sync --deep` | Process the full Git history (up to 1000 commits) to build comprehensive project memory from scratch. Use this for initial setup on existing projects. |
+| `vibeguard check` | Run a health check that validates your environment setup, API key validity, Git repository status, and `PROJECT_MEMORY.md` existence. Displays a status report with colored indicators. |
+| `vibeguard visualize` | Generate or regenerate the architecture diagram (`DIAGRAM.md`) using Mermaid.js. Scans your `src/` directory and uses AI to create a visual representation of your project structure with color-coded components. |
+| `vibeguard dashboard` | Start the local web dashboard server (default port 3000). Provides interactive views for "The Soul" (PROJECT_MEMORY.md), "The Map" (DIAGRAM.md), and "The Pulse" (token analytics and Oracle insights). Opens automatically in your browser. |
+
+### Command Examples
 
 ```bash
-npm run dev sync --deep
+# First-time setup
+vibeguard init
+
+# Start continuous monitoring
+vibeguard watch
+
+# One-time sync of latest changes
+vibeguard sync
+
+# Build memory from entire project history
+vibeguard sync --deep
+
+# Verify everything is working
+vibeguard check
+
+# Generate architecture diagram
+vibeguard visualize
+
+# Open dashboard to view insights
+vibeguard dashboard
 ```
 
-### Dashboard
+---
 
-Launch the visual web interface:
+## 🛠️ How it Works
 
-```bash
-npm run dev dashboard
-```
+VibeGuard operates as a "Shadow Architect" alongside your IDE (Cursor/VS Code):
 
-The dashboard provides three views:
-- **The Soul**: View and browse `PROJECT_MEMORY.md` content
-- **The Map**: Visualize architecture with interactive Mermaid diagrams
-- **The Pulse**: Monitor watcher status and Oracle prophecies in real-time
+1. **The Hook**: Every time you commit or save, the Watcher captures the diff.
+2. **The Synthesis**: The Librarian uses a "Flash" model to update the `PROJECT_MEMORY.md`, ensuring the AI always has the latest "state."
+3. **The Governance**: When you start a new feature, the Oracle (using `.mdc` rules) forces the AI to check the Memory and Diagram before writing a single line of code.
+4. **The Dashboard**: Monitor your project's health, architectural map, and token savings via the local VibeGuard Dashboard.
 
-Build the dashboard for production:
+---
 
-```bash
-npm run build:dashboard
-```
+## 📉 Token Economics
 
-## PROJECT_MEMORY.md Schema
+VibeGuard is built to be "Financially Intelligent." By intelligently routing background tasks (like summarization) to Gemini Flash or GPT-Mini and reserving "Pro" models for complex reasoning, VibeGuard effectively pays for itself.
 
-The generated `PROJECT_MEMORY.md` follows this structure:
+**Current User Average**: $12.40 Saved / Week compared to brute-force context dumping.
 
-```markdown
-## Project Soul
-A 2-sentence description of what this app is and who it's for.
+---
 
-## Tech Stack
-A list of core libraries, frameworks, and versions.
+## 🤝 Community & Feedback
 
-## Architecture
-High-level overview of how data flows.
+VibeGuard is in Open Beta. We move fast and break things—help us fix them.
 
-## Core Rules
-Critical "Vibe" rules that must be followed.
+- **Discord**: [Join the VibeGuard Tribe](https://discord.gg/Kkmx2V3X) (Real-time support & Vibe checks)
+- **GitHub Issues**: [Found a bug?](https://github.com/cdaviddav/vibeguard/issues) Open an issue.
 
-## Recent Decisions (The "Why")
-Document the last 5 major changes and *why* they happened.
+---
 
-## Active Tech Debt
-Known bugs or "next steps" that the AI should be aware of.
-```
+## ❓ Troubleshooting & FAQ
 
-## How It Works
+### "API Key Not Found" or Authentication Errors
 
-1. **Pre-Shredder**: Cleans diffs by removing bloat (lockfiles, node_modules, build outputs)
-2. **Chunking**: Handles large diffs by splitting into manageable pieces
-3. **The Librarian**: Uses Gemini 3 Flash with specialized prompts to extract architectural insights
-4. **Atomic Writes**: Prevents file corruption using `write-file-atomic`
-5. **Auto-Staging**: Keeps memory file in sync with code changes
+VibeGuard stores keys globally in `~/.vibeguard/config.json`.
 
-## Development
+**Fix**: Run `vibeguard init --reconfigure` to re-enter your keys.
 
-```bash
-# Build
-npm run build
+**Pro-Tip**: If you prefer environment variables, VibeGuard will prioritize `GOOGLE_API_KEY`, `OPENAI_API_KEY`, or `ANTHROPIC_API_KEY` if they are set in your shell.
 
-# Run in development mode
-npm run dev <command>
+### Mermaid Diagrams are not rendering
 
-# Run built version
-npm start <command>
-```
+If `DIAGRAM.md` shows raw text instead of a chart:
 
-## Project Structure
+- **VS Code**: Ensure you have the [Markdown Preview Mermaid Support](https://marketplace.visualstudio.com/items?itemName=bierner.markdown-mermaid) extension installed.
+- **Cursor**: The built-in preview supports Mermaid by default. If it fails, check for syntax errors at the top of the file—VibeGuard usually auto-fixes these on the next `visualize` run.
 
-```
-vibeguard/
-├── src/
-│   ├── index.ts                 # CLI entry point
-│   ├── mcp-server.ts            # MCP server for Cursor integration
-│   ├── commands/
-│   │   └── dashboard.ts         # Dashboard Express server
-│   ├── librarian/
-│   │   ├── watcher.ts           # Git change detection
-│   │   ├── summarizer.ts        # Gemini integration
-│   │   ├── memory-manager.ts    # PROJECT_MEMORY.md management
-│   │   ├── initializer.ts       # Three-tier initialization
-│   │   ├── oracle.ts            # Architectural drift detection
-│   │   ├── autofix.ts           # AI-powered refactoring engine
-│   │   └── heartbeat.ts         # Quiet reflection service
-│   ├── dashboard/               # React/Vite dashboard application
-│   │   ├── src/
-│   │   │   ├── components/      # React components (TheSoul, TheMap, ThePulse, etc.)
-│   │   │   ├── hooks/           # React hooks (usePulse)
-│   │   │   └── App.tsx          # Dashboard entry point
-│   │   └── package.json         # Dashboard dependencies
-│   ├── utils/
-│   │   ├── llm.ts              # Gemini API wrapper
-│   │   ├── git.ts              # Git operations
-│   │   ├── config.ts           # Configuration manager
-│   │   ├── diff-cleaner.ts     # Pre-shredder
-│   │   └── chunker.ts          # Large diff handler
-│   └── types/
-│       └── write-file-atomic.d.ts
-├── scripts/
-│   └── copy-dashboard.js       # Build script for dashboard deployment
-├── PROJECT_MEMORY.md           # Generated memory (git-ignored)
-├── DIAGRAM.md                  # Generated architecture diagram
-└── .env                        # Environment configuration (git-ignored)
-```
+### High Token Usage / Costs
 
-## License
+If your "Pulse" dashboard shows a spike in spend:
 
-ISC
+- **Check your Profile**: You may be on "High-IQ" mode. Switch to "Balanced" or "Economy" using `vibeguard init` to use Flash models for routine summaries.
+- **Large Commits**: Avoid staging massive binary files or `node_modules`. VibeGuard respects `.gitignore`, but heavy text files can still consume tokens.
 
-## Contributing
+### "Unknown Command" Errors
 
-Contributions welcome! Please open an issue or submit a pull request.
+If you see `command not found: vibeguard`:
 
+- Ensure you installed it globally: `npm install -g @vibeguard/cli`.
+- If using `npx`, run `npx vibeguard@latest <command>`.
+
+---
+
+## ⚖️ License
+
+MIT © 2026 VibeGuard Team.
