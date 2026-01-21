@@ -8,9 +8,11 @@
  * tech stack, and recent decisions.
  */
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+// Use explicit .js extensions for ESM compatibility
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+// Types are often exported from the root or specific files, check if types.js exists or use root
+import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { MemoryManager } from './librarian/memory-manager';
 import { generateSummary } from './utils/llm';
 import { getApiKey } from './utils/config';
@@ -18,7 +20,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 
 // Create server instance
-const server = new Server(
+const server = new McpServer(
   {
     name: 'vibeguard-mcp',
     version: '1.0.0',
@@ -655,6 +657,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 });
 
 // Handle tool execution
+// Add explicit type to silence TS7006
 server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
   const { name, arguments: args } = request.params;
 
