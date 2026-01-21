@@ -17,8 +17,12 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Install Dependencies
-        run: npm install && cd dashboard && npm install
+      - name: Install Root Dependencies
+        run: npm install
+
+      - name: Install Dashboard Dependencies
+        run: npm install
+        working-directory: ./dashboard
 
       - name: Build Project
         run: npm run build
