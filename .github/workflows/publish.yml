@@ -22,7 +22,7 @@ jobs:
 
       - name: Install Dashboard Dependencies
         run: npm install
-        working-directory: ./dashboard
+        working-directory: ./src/dashboard
 
       - name: Build Project
         run: npm run build
