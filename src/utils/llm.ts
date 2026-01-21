@@ -196,11 +196,11 @@ class OpenAIAdapter implements LLMAdapter {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
+      const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } })) as any;
       throw new Error(`OpenAI API error: ${error.error?.message || 'Unknown error'}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     const text = data.choices[0]?.message?.content;
 
     if (!text) {
@@ -262,11 +262,11 @@ class AnthropicAdapter implements LLMAdapter {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
+      const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } })) as any;
       throw new Error(`Anthropic API error: ${error.error?.message || 'Unknown error'}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     const text = data.content[0]?.text;
 
     if (!text) {
