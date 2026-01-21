@@ -1,6 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { generateSummary } from '../utils/llm';
+import { generateSummary } from '../utils/llm.js';
 
 export interface Prophecy {
   id: string;

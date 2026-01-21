@@ -1,6 +1,6 @@
-import { GitUtils } from '../utils/git';
-import { Summarizer } from './summarizer';
-import { MemoryManager } from './memory-manager';
+import { GitUtils } from '../utils/git.js';
+import { Summarizer } from './summarizer.js';
+import { MemoryManager } from './memory-manager.js';
 import * as path from 'path';
 
 export interface MilestoneCommit {

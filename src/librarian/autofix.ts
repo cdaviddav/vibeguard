@@ -1,10 +1,10 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { OracleService, Prophecy } from './oracle';
-import { GitUtils } from '../utils/git';
-import { generateSummary } from '../utils/llm';
+import { OracleService, Prophecy } from './oracle.js';
+import { GitUtils } from '../utils/git.js';
+import { generateSummary } from '../utils/llm.js';
 import writeFileAtomic from 'write-file-atomic';
-import simpleGit, { SimpleGit } from 'simple-git';
+import { simpleGit, SimpleGit } from 'simple-git';
 
 export interface FixResult {
   success: boolean;

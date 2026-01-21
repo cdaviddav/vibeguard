@@ -13,9 +13,9 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 // Types are often exported from the root or specific files, check if types.js exists or use root
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { MemoryManager } from './librarian/memory-manager';
-import { generateSummary } from './utils/llm';
-import { getApiKey } from './utils/config';
+import { MemoryManager } from './librarian/memory-manager.js';
+import { generateSummary } from './utils/llm.js';
+import { getApiKey } from './utils/config.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -609,8 +609,8 @@ function parsePinnedFiles(memoryContent: string): string[] | null {
   return inPinnedSection ? filePaths : null;
 }
 
-// Register the read_project_memory tool
-server.setRequestHandler(ListToolsRequestSchema, async () => {
+// Register the read_project_memory tool using the underlying Server instance
+server.server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       {
@@ -656,9 +656,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   };
 });
 
-// Handle tool execution
+// Handle tool execution using the underlying Server instance
 // Add explicit type to silence TS7006
-server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
+server.server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
   const { name, arguments: args } = request.params;
 
   if (name === 'read_project_memory') {

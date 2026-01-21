@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 
-import { Initializer } from './librarian/initializer';
-import { Watcher } from './librarian/watcher';
-import { Summarizer } from './librarian/summarizer';
-import { MemoryManager } from './librarian/memory-manager';
-import { OracleService } from './librarian/oracle';
-import { Heartbeat } from './librarian/heartbeat';
-import { GitUtils } from './utils/git';
-import { getApiKey, getModel } from './utils/config';
-import { generateSummary } from './utils/llm';
-import { handleDashboard } from './commands/dashboard';
-import { handleInit } from './commands/init';
+import { Initializer } from './librarian/initializer.js';
+import { Watcher } from './librarian/watcher.js';
+import { Summarizer } from './librarian/summarizer.js';
+import { MemoryManager } from './librarian/memory-manager.js';
+import { OracleService } from './librarian/oracle.js';
+import { Heartbeat } from './librarian/heartbeat.js';
+import { GitUtils } from './utils/git.js';
+import { getApiKey, getModel } from './utils/config.js';
+import { generateSummary } from './utils/llm.js';
+import { handleDashboard } from './commands/dashboard.js';
+import { handleInit } from './commands/init.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import simpleGit from 'simple-git';
+import { simpleGit } from 'simple-git';
 
 const COMMANDS = {
   INIT: 'init',
@@ -675,11 +675,9 @@ For more information, visit: https://github.com/cdaviddav/vibeguard
   }
 }
 
-// Run if this file is executed directly
-if (require.main === module) {
-  main().catch(error => {
-    console.error('Fatal error:', error);
-    process.exit(1);
-  });
-}
+// Run main function (this is the entry point)
+main().catch(error => {
+  console.error('Fatal error:', error);
+  process.exit(1);
+});
 

@@ -1,7 +1,7 @@
-import { generateSummary, estimateTokens } from '../utils/llm';
-import { cleanDiff } from '../utils/diff-cleaner';
-import { chunkDiff } from '../utils/chunker';
-import { getMaxTokens } from '../utils/config';
+import { generateSummary, estimateTokens } from '../utils/llm.js';
+import { cleanDiff } from '../utils/diff-cleaner.js';
+import { chunkDiff } from '../utils/chunker.js';
+import { getMaxTokens } from '../utils/config.js';
 
 /**
  * Get the Librarian system prompt with current date

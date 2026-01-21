@@ -1,5 +1,9 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const source = path.join(__dirname, '../dist/dashboard');
 const dest = path.join(__dirname, '../dashboard/dist');
@@ -42,4 +46,3 @@ function copyRecursive(src, dest) {
 
 copyRecursive(source, dest);
 console.log(`Dashboard copied from ${source} to ${dest} for npm package`);
-

@@ -1,4 +1,4 @@
-import { OracleService } from './oracle';
+import { OracleService } from './oracle.js';
 
 export class Heartbeat {
   private oracle: OracleService;

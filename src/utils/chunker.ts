@@ -1,4 +1,4 @@
-import { estimateTokens } from './llm';
+import { estimateTokens } from './llm.js';
 
 /**
  * Group files from a diff by directory/module

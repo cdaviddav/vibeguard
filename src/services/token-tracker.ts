@@ -1,8 +1,8 @@
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import writeFileAtomic from 'write-file-atomic';
-import { calculateCost, calculateHighIqCost, isFlashModel } from '../utils/pricing';
-import { LLMProvider } from '../utils/config-manager';
+import { calculateCost, calculateHighIqCost, isFlashModel } from '../utils/pricing.js';
+import { LLMProvider } from '../utils/config-manager.js';
 
 export type Feature = 'Librarian' | 'Oracle' | 'AutoFix';
 

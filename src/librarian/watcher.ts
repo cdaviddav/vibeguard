@@ -1,7 +1,7 @@
 import * as chokidar from 'chokidar';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { GitUtils } from '../utils/git';
+import { GitUtils } from '../utils/git.js';
 
 interface WatcherState {
   lastProcessedCommit: string | null;

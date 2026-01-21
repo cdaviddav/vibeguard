@@ -2,7 +2,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 import { config } from 'dotenv';
-import { ConfigManager, GlobalConfig as ConfigManagerGlobalConfig } from './config-manager';
+import { ConfigManager, GlobalConfig as ConfigManagerGlobalConfig } from './config-manager.js';
 
 export interface GlobalConfig {
   geminiApiKey?: string;

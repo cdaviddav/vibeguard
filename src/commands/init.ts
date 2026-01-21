@@ -1,9 +1,9 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import inquirer from 'inquirer';
-import { ConfigManager, LLMProvider, ModelProfile } from '../utils/config-manager';
-import { Initializer } from '../librarian/initializer';
-import { MemoryManager } from '../librarian/memory-manager';
+import { ConfigManager, LLMProvider, ModelProfile } from '../utils/config-manager.js';
+import { Initializer } from '../librarian/initializer.js';
+import { MemoryManager } from '../librarian/memory-manager.js';
 
 /**
  * Show branding with ASCII logo

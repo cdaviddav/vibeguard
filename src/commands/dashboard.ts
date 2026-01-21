@@ -4,11 +4,11 @@ import * as fs from 'fs/promises';
 import { existsSync } from 'fs';
 import * as path from 'path';
 import open from 'open';
-import { Watcher } from '../librarian/watcher';
-import { OracleService } from '../librarian/oracle';
-import { AutoFixService } from '../librarian/autofix';
-import { TokenTracker } from '../services/token-tracker';
-import { DASHBOARD_PATH } from '../cli';
+import { Watcher } from '../librarian/watcher.js';
+import { OracleService } from '../librarian/oracle.js';
+import { AutoFixService } from '../librarian/autofix.js';
+import { TokenTracker } from '../services/token-tracker.js';
+import { DASHBOARD_PATH } from '../cli.js';
 
 export async function handleDashboard() {
   const repoPath = process.cwd();

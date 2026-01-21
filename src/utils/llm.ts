@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
-import { ConfigManager, LLMProvider, ModelProfile } from './config-manager';
-import { getMaxTokens } from './config';
-import { TokenTracker, Feature } from '../services/token-tracker';
+import { ConfigManager, LLMProvider, ModelProfile } from './config-manager.js';
+import { getMaxTokens } from './config.js';
+import { TokenTracker, Feature } from '../services/token-tracker.js';
 
 export interface LLMOptions {
   maxTokens?: number;
