@@ -1,74 +1,14 @@
 import express from 'express';
 import sirv from 'sirv';
 import * as fs from 'fs/promises';
+import { existsSync } from 'fs';
 import * as path from 'path';
 import open from 'open';
 import { Watcher } from '../librarian/watcher';
 import { OracleService } from '../librarian/oracle';
 import { AutoFixService } from '../librarian/autofix';
 import { TokenTracker } from '../services/token-tracker';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-
-// ES module equivalent of __dirname for path resolution
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Resolve dashboard path - works whether installed via npm or run via npx
-async function resolveDashboardPath(): Promise<string> {
-  // When installed: node_modules/@vibeguard/cli/dist/commands/dashboard.js
-  // Dashboard should be at: node_modules/@vibeguard/cli/dashboard/dist
-  // From dist/commands/, go up to dist/, then up to package root, then into dashboard/dist
-  
-  let currentDir = __dirname; // dist/commands/
-  const maxDepth = 10;
-  let depth = 0;
-  
-  // First, try to find package root by looking for package.json
-  while (depth < maxDepth) {
-    const packageJsonPath = path.join(currentDir, 'package.json');
-    try {
-      await fs.access(packageJsonPath);
-      // Found package root, check for dashboard/dist
-      const dashboardPath = path.join(currentDir, 'dashboard', 'dist');
-      try {
-        await fs.access(dashboardPath);
-        return dashboardPath;
-      } catch {
-        // Package root found but no dashboard, continue search
-      }
-    } catch {
-      // Not package root, continue
-    }
-    
-    // Go up one level
-    const parent = path.dirname(currentDir);
-    if (parent === currentDir) {
-      break;
-    }
-    currentDir = parent;
-    depth++;
-  }
-  
-  // Fallback 1: Try relative to dist/commands/ -> go up to package root
-  // dist/commands/ -> dist/ -> package root -> dashboard/dist
-  const fromCommands = path.join(__dirname, '..', '..', 'dashboard', 'dist');
-  try {
-    await fs.access(fromCommands);
-    return fromCommands;
-  } catch {
-    // Continue to next fallback
-  }
-  
-  // Fallback 2: Try relative to process.cwd() (for development)
-  const devPath = path.join(process.cwd(), 'dist', 'dashboard');
-  try {
-    await fs.access(devPath);
-    return devPath;
-  } catch {
-    throw new Error('Dashboard not found. Please run `npm run build` first.');
-  }
-}
+import { DASHBOARD_PATH } from '../cli';
 
 export async function handleDashboard() {
   const repoPath = process.cwd();
@@ -77,14 +17,9 @@ export async function handleDashboard() {
   // Use port 5000 as specified
   const PORT = 5000;
   
-  // Resolve dashboard path using import.meta for correct path resolution
-  const dashboardPath = await resolveDashboardPath();
-  
-  // Check if dashboard is built
-  try {
-    await fs.access(dashboardPath);
-  } catch (error) {
-    console.error('❌ Dashboard not built. Please run `npm run build` first.');
+  // Safety check: Verify dashboard assets exist before starting server
+  if (!existsSync(DASHBOARD_PATH)) {
+    console.error(`Error: Dashboard assets not found at ${DASHBOARD_PATH}`);
     process.exit(1);
   }
   
@@ -238,7 +173,7 @@ export async function handleDashboard() {
   });
   
   // Use sirv to serve static files (SPA fallback handled by sirv's single option)
-  app.use(sirv(dashboardPath, { dev: false, single: true }));
+  app.use(sirv(DASHBOARD_PATH, { dev: false, single: true }));
   
   // Start server
   const server = app.listen(PORT, () => {

@@ -17,9 +17,12 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import simpleGit from 'simple-git';
 
-// ES module equivalent of __dirname
+// Robust ESM path logic
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+// This resolves to the dashboard/dist folder at the package root
+// when the CLI is running from the dist/ folder.
+export const DASHBOARD_PATH = join(__dirname, '../dashboard/dist');
 
 // Helper to resolve paths relative to the package root
 // This works whether installed via npm or run via npx
