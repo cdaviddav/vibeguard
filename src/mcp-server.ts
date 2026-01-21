@@ -8,10 +8,9 @@
  * tech stack, and recent decisions.
  */
 
-// Use explicit .js extensions for ESM compatibility
+// MCP SDK imports - use subpath imports that match the package exports
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-// Types are often exported from the root or specific files, check if types.js exists or use root
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { MemoryManager } from './librarian/memory-manager.js';
 import { generateSummary } from './utils/llm.js';
