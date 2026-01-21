@@ -5,7 +5,8 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const source = path.join(__dirname, '../dist/dashboard');
+// Copy directly from dashboard build output to npm package location
+const source = path.join(__dirname, '../src/dashboard/dist');
 const dest = path.join(__dirname, '../dashboard/dist');
 
 // Create dashboard directory if it doesn't exist
