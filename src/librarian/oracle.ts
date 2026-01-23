@@ -179,7 +179,7 @@ Analyze the above and identify 3 specific areas of architectural drift. Return a
       // Use Gemini 3 Pro for architectural reasoning
       const response = await generateSummary(userPrompt, systemPrompt, {
         thinkingLevel: 'pro',
-        maxTokens: 50000,
+        tokenProfile: 'ORACLE', // Complex code generation or fixes
         temperature: 0.5,
         feature: 'Oracle',
       });

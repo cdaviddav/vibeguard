@@ -153,11 +153,9 @@ ${readme ? `README.md:\n\`\`\`\n${readme}\n\`\`\`\n\n` : ''}Task: Analyze the fi
 
 Create a complete PROJECT_MEMORY.md with all required sections. Use today's date (${today}) for any date entries. If you see any dates from 2024 in existing memory, update them to 2026.`;
 
-    const maxTokens = await getMaxTokens();
-
     return await generateSummary(prompt, getLibrarianSystemPrompt(), {
       thinkingLevel,
-      maxTokens,
+      tokenProfile: 'SKELETON', // Tier 3 architectural summaries
       feature: 'Librarian',
     });
   }

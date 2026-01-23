@@ -204,21 +204,29 @@ export class Initializer {
   async initialize(): Promise<void> {
     console.log('Starting three-tier initialization...\n');
 
-    // Ensure memory is tracked in Git
-    await this.ensureMemoryTrackedInGit();
-
-    // Tier 1: Oneline sweep (0 tokens, local only)
-    const timeline = await this.tier1OnelineSweep();
-    console.log(`Tier 1 complete: ${timeline.milestones.length} milestones identified\n`);
-
-    // Tier 2: Deep context (process recent commits)
+    // Check if this is a Git repository
+    const isRepo = await this.gitUtils.checkIsRepo();
     let tier2Memory = '';
-    try {
-      tier2Memory = await this.tier2DeepContext();
-      console.log('Tier 2 complete: Recent commits processed\n');
-    } catch (error) {
-      console.error('Tier 2 error:', error);
-      // Continue with Tier 3 even if Tier 2 fails
+    
+    if (!isRepo) {
+      console.log('[VibeGuard] No Git repository detected. Skipping history analysis...\n');
+      // Skip Tier 1 and 2, jump straight to Tier 3
+    } else {
+      // Ensure memory is tracked in Git
+      await this.ensureMemoryTrackedInGit();
+
+      // Tier 1: Oneline sweep (0 tokens, local only)
+      const timeline = await this.tier1OnelineSweep();
+      console.log(`Tier 1 complete: ${timeline.milestones.length} milestones identified\n`);
+
+      // Tier 2: Deep context (process recent commits)
+      try {
+        tier2Memory = await this.tier2DeepContext();
+        console.log('Tier 2 complete: Recent commits processed\n');
+      } catch (error) {
+        console.error('Tier 2 error:', error);
+        // Continue with Tier 3 even if Tier 2 fails
+      }
     }
 
     // Tier 3: Skeleton scan (infer architecture)

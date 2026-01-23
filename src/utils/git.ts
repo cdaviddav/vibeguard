@@ -18,6 +18,26 @@ export class GitUtils {
   }
 
   /**
+   * Check if the current directory is a Git repository
+   */
+  async checkIsRepo(): Promise<boolean> {
+    try {
+      await this.git.status();
+      return true;
+    } catch (error: any) {
+      // If status fails, it's likely not a git repo
+      if (
+        error.message?.includes('not a git repository') ||
+        error.message?.includes('not a git repo')
+      ) {
+        return false;
+      }
+      // For other errors, assume it's a repo (might be other git issues)
+      return true;
+    }
+  }
+
+  /**
    * Get the latest N commits
    */
   async getLatestCommits(count: number): Promise<LogResult['all']> {

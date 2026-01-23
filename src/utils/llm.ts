@@ -3,8 +3,18 @@ import { ConfigManager, LLMProvider, ModelProfile } from './config-manager.js';
 import { getMaxTokens } from './config.js';
 import { TokenTracker, Feature } from '../services/token-tracker.js';
 
+export type TokenProfile = 'SYNOPSIS' | 'SKELETON' | 'ORACLE' | 'MAX_CAP';
+
+export const TOKEN_PROFILES: Record<TokenProfile, number> = {
+  SYNOPSIS: 300,      // For short project descriptions
+  SKELETON: 2000,     // For Tier 3 architectural summaries
+  ORACLE: 4000,       // For complex code generation or fixes
+  MAX_CAP: 16384,     // The absolute hard limit for GPT-4o output
+};
+
 export interface LLMOptions {
   maxTokens?: number;
+  tokenProfile?: TokenProfile; // Task-specific token profile
   thinkingLevel?: 'flash' | 'pro';
   temperature?: number;
   feature?: Feature; // Feature making the call (Librarian/Oracle/AutoFix)
@@ -105,7 +115,18 @@ class GeminiAdapter implements LLMAdapter {
     const modelName = ConfigManager.getModelForProfile(provider, profile, thinkingLevel);
 
     const model = await this.initialize(apiKey, modelName);
-    const maxTokens = options.maxTokens || await getMaxTokens();
+    
+    // Determine max tokens: use profile if provided, otherwise use explicit maxTokens, otherwise fallback to config
+    let maxTokens: number;
+    if (options.tokenProfile) {
+      const profileLimit = TOKEN_PROFILES[options.tokenProfile];
+      maxTokens = Math.min(profileLimit, TOKEN_PROFILES.MAX_CAP);
+    } else {
+      maxTokens = options.maxTokens || await getMaxTokens();
+      // Apply safety cap even when using explicit maxTokens
+      maxTokens = Math.min(maxTokens, TOKEN_PROFILES.MAX_CAP);
+    }
+    
     const temperature = options.temperature ?? 0.3;
 
     const fullPrompt = `${systemPrompt}\n\n${prompt}`;
@@ -174,7 +195,17 @@ class OpenAIAdapter implements LLMAdapter {
     const thinkingLevel = options.thinkingLevel || 'flash';
     const modelName = ConfigManager.getModelForProfile(provider, profile, thinkingLevel);
 
-    const maxTokens = options.maxTokens || await getMaxTokens();
+    // Determine max tokens: use profile if provided, otherwise use explicit maxTokens, otherwise fallback to config
+    let maxTokens: number;
+    if (options.tokenProfile) {
+      const profileLimit = TOKEN_PROFILES[options.tokenProfile];
+      maxTokens = Math.min(profileLimit, TOKEN_PROFILES.MAX_CAP);
+    } else {
+      maxTokens = options.maxTokens || await getMaxTokens();
+      // Apply safety cap even when using explicit maxTokens
+      maxTokens = Math.min(maxTokens, TOKEN_PROFILES.MAX_CAP);
+    }
+    
     const temperature = options.temperature ?? 0.3;
 
     // Use fetch for OpenAI API
@@ -239,7 +270,17 @@ class AnthropicAdapter implements LLMAdapter {
     const thinkingLevel = options.thinkingLevel || 'flash';
     const modelName = ConfigManager.getModelForProfile(provider, profile, thinkingLevel);
 
-    const maxTokens = options.maxTokens || await getMaxTokens();
+    // Determine max tokens: use profile if provided, otherwise use explicit maxTokens, otherwise fallback to config
+    let maxTokens: number;
+    if (options.tokenProfile) {
+      const profileLimit = TOKEN_PROFILES[options.tokenProfile];
+      maxTokens = Math.min(profileLimit, TOKEN_PROFILES.MAX_CAP);
+    } else {
+      maxTokens = options.maxTokens || await getMaxTokens();
+      // Apply safety cap even when using explicit maxTokens
+      maxTokens = Math.min(maxTokens, TOKEN_PROFILES.MAX_CAP);
+    }
+    
     const temperature = options.temperature ?? 0.3;
 
     // Use fetch for Anthropic API
