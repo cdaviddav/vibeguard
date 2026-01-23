@@ -30,21 +30,34 @@ export class Initializer {
 
   /**
    * Ensure PROJECT_MEMORY.md is tracked in Git
+   * Only runs if this is a Git repository
    */
   async ensureMemoryTrackedInGit(): Promise<void> {
-    const memoryPath = path.join(this.repoPath, 'PROJECT_MEMORY.md');
-    const isIgnored = await this.gitUtils.isInGitignore(memoryPath);
-
-    if (isIgnored) {
-      console.log('Removing PROJECT_MEMORY.md from .gitignore...');
-      await this.gitUtils.removeFromGitignore(memoryPath);
+    // Check if this is a Git repository before attempting any Git operations
+    const isRepo = await this.gitUtils.isGitRepo();
+    if (!isRepo) {
+      console.log('[VibeGuard] Skipping git tracking (not a git repository).');
+      return;
     }
 
-    // Stage the file if it exists
     try {
-      await this.gitUtils.stageFile(memoryPath);
+      const memoryPath = path.join(this.repoPath, 'PROJECT_MEMORY.md');
+      const isIgnored = await this.gitUtils.isInGitignore(memoryPath);
+
+      if (isIgnored) {
+        console.log('Removing PROJECT_MEMORY.md from .gitignore...');
+        await this.gitUtils.removeFromGitignore(memoryPath);
+      }
+
+      // Stage the file if it exists
+      try {
+        await this.gitUtils.stageFile(memoryPath);
+      } catch (error) {
+        // File doesn't exist yet - that's fine
+      }
     } catch (error) {
-      // File doesn't exist yet - that's fine
+      // Log warning but don't throw - initialization can continue without Git tracking
+      console.warn('[VibeGuard] Could not ensure memory is tracked in Git:', error);
     }
   }
 
@@ -285,9 +298,14 @@ export class Initializer {
       );
     }
 
-    // Write the final memory
-    await this.memoryManager.writeMemory(finalMemory);
-
-    console.log('Initialization complete! PROJECT_MEMORY.md has been created/updated.');
+    // Write the final memory (this will attempt to stage in Git, but won't fail if not a Git repo)
+    try {
+      await this.memoryManager.writeMemory(finalMemory);
+      console.log('Initialization complete! PROJECT_MEMORY.md has been created/updated.');
+    } catch (error) {
+      // If writeMemory fails, it's critical - rethrow
+      console.error('[VibeGuard] Failed to write PROJECT_MEMORY.md:', error);
+      throw error;
+    }
   }
 }

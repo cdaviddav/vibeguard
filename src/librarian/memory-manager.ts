@@ -86,16 +86,29 @@ export class MemoryManager {
     const memoryPath = this.getMemoryPath();
     await writeFileAtomic(memoryPath, content, 'utf-8');
 
-    // Auto-stage the file
+    // Auto-stage the file (only if Git repo)
     await this.stageMemoryFile();
   }
 
   /**
    * Stage PROJECT_MEMORY.md in Git
+   * Only stages if this is a Git repository
    */
   async stageMemoryFile(): Promise<void> {
-    const memoryPath = this.getMemoryPath();
-    await this.gitUtils.stageFile(memoryPath);
+    // Check if this is a Git repository before attempting to stage
+    const isRepo = await this.gitUtils.isGitRepo();
+    if (!isRepo) {
+      console.log('[VibeGuard] Skipping git tracking (not a git repository).');
+      return;
+    }
+
+    try {
+      const memoryPath = this.getMemoryPath();
+      await this.gitUtils.stageFile(memoryPath);
+    } catch (error) {
+      // Log warning but don't throw - file was written successfully
+      console.warn('[VibeGuard] Could not stage PROJECT_MEMORY.md in Git:', error);
+    }
   }
 
   /**
@@ -180,7 +193,7 @@ export class MemoryManager {
     const memoryPath = this.getMemoryPath();
     await writeFileAtomic(memoryPath, updatedContent, 'utf-8');
     
-    // Auto-stage the file
+    // Auto-stage the file (only if Git repo)
     await this.stageMemoryFile();
   }
 

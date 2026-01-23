@@ -38,6 +38,18 @@ export class GitUtils {
   }
 
   /**
+   * Git-safe helper: Check if this is a Git repository
+   * Returns false on any error to prevent crashes
+   */
+  async isGitRepo(): Promise<boolean> {
+    try {
+      return await this.checkIsRepo();
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Get the latest N commits
    */
   async getLatestCommits(count: number): Promise<LogResult['all']> {
