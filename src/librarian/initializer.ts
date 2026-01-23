@@ -144,7 +144,13 @@ export class Initializer {
     console.log('Tier 2: Processing recent commits (deep context)...');
 
     const commitCount = 10; // Process last 10 commits
-    const commits = await this.gitUtils.getLatestCommits(commitCount);
+    let commits;
+    try {
+      commits = await this.gitUtils.getLatestCommits(commitCount);
+    } catch (error) {
+      console.warn('[VibeGuard] Could not get latest commits:', error);
+      return '';
+    }
 
     if (commits.length === 0) {
       return '';
@@ -204,28 +210,52 @@ export class Initializer {
   async initialize(): Promise<void> {
     console.log('Starting three-tier initialization...\n');
 
-    // Check if this is a Git repository
-    const isRepo = await this.gitUtils.checkIsRepo();
+    // Check if this is a Git repository before running Tier 1 or Tier 2
+    let isRepo = false;
+    try {
+      isRepo = await this.gitUtils.checkIsRepo();
+    } catch (error) {
+      // If checkIsRepo itself fails, assume it's not a git repo
+      console.warn('[VibeGuard] Could not check Git repository status:', error);
+      isRepo = false;
+    }
+
     let tier2Memory = '';
     
     if (!isRepo) {
-      console.log('[VibeGuard] No Git repository detected. Skipping history analysis...\n');
+      console.log('[VibeGuard] Non-Git project detected. Skipping Git-specific analysis.\n');
       // Skip Tier 1 and 2, jump straight to Tier 3
     } else {
-      // Ensure memory is tracked in Git
-      await this.ensureMemoryTrackedInGit();
-
-      // Tier 1: Oneline sweep (0 tokens, local only)
-      const timeline = await this.tier1OnelineSweep();
-      console.log(`Tier 1 complete: ${timeline.milestones.length} milestones identified\n`);
-
-      // Tier 2: Deep context (process recent commits)
+      // Wrap all Git-dependent operations in try/catch to prevent crashes
       try {
-        tier2Memory = await this.tier2DeepContext();
-        console.log('Tier 2 complete: Recent commits processed\n');
+        // Ensure memory is tracked in Git
+        try {
+          await this.ensureMemoryTrackedInGit();
+        } catch (error) {
+          console.warn('[VibeGuard] Could not ensure memory is tracked in Git:', error);
+          // Continue even if this fails
+        }
+
+        // Tier 1: Oneline sweep (0 tokens, local only)
+        try {
+          const timeline = await this.tier1OnelineSweep();
+          console.log(`Tier 1 complete: ${timeline.milestones.length} milestones identified\n`);
+        } catch (error) {
+          console.warn('[VibeGuard] Tier 1 error:', error);
+          // Continue with Tier 2 even if Tier 1 fails
+        }
+
+        // Tier 2: Deep context (process recent commits)
+        try {
+          tier2Memory = await this.tier2DeepContext();
+          console.log('Tier 2 complete: Recent commits processed\n');
+        } catch (error) {
+          console.warn('[VibeGuard] Tier 2 error:', error);
+          // Continue with Tier 3 even if Tier 2 fails
+        }
       } catch (error) {
-        console.error('Tier 2 error:', error);
-        // Continue with Tier 3 even if Tier 2 fails
+        // Catch-all for any unexpected Git errors
+        console.warn('[VibeGuard] Git operations failed, continuing with Tier 3:', error);
       }
     }
 
