@@ -29,6 +29,7 @@ VibeGuard operates as a pipeline: Git Watcher/CLI triggers -> Range-based Diff P
 - **Temporal Awareness:** Always use 2026 for new entries; automatically migrate legacy 2024 references to 2026.
 
 ## Recent Decisions (The "Why")
+- **Bumped Project Version to v1.1.0 (24.01.2026):** Formalized the first minor release of the VibeGuard CLI, consolidating the autonomous maintenance loop, Oracle drift detection, and the premium dashboard into a stable distribution.
 - **Streamlined CLI Boot Sequence (20.01.2026):** Refactored the `init` command to remove legacy ASCII branding and redundant variable declarations, prioritizing a leaner and faster initialization experience.
 - **Refactored Dashboard UI to Bento Grid and Premium Design System (19.01.2026):** Overhauled the visual interface with a modular bento-grid layout and a sophisticated "Librarian/Oracle" aesthetic. Introduced noise textures, ambient mesh gradients, and a unified `vg-` Tailwind prefix. Enhanced Mermaid.js integration with a premium dark theme and fullscreen support, and implemented specialized markdown parsing for memory sections.
 - **Standardized Architectural Scan Depth and Token Defaults (18.01.2026):** Centralized configuration for directory traversal depth (set to 15) and increased default LLM token limits to 50,000. This synchronizes the Skeleton Scan and Oracle Service for consistent architectural inference across the pipeline.

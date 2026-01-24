@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
-import { Brain, Map, Activity, Sparkles } from 'lucide-react';
+import { Brain, Map, Activity } from 'lucide-react';
 import { motion } from 'framer-motion';
+import vibeguardLogo from '../assets/images/vibeguard-shield-logo.png';
 
 type View = 'soul' | 'map' | 'pulse';
 
@@ -38,10 +39,11 @@ export default function DashboardLayout({ children, currentView, onViewChange }:
         <div className="p-5 border-b border-white/[0.06]">
           <div className="flex items-center gap-2.5">
             <div className="relative">
-              <div className="w-8 h-8 rounded-md bg-gradient-to-br from-vg-indigo to-vg-violet flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-white" />
-              </div>
-              <div className="absolute inset-0 rounded-md bg-gradient-to-br from-vg-indigo to-vg-violet blur-lg opacity-40" />
+              <img 
+                src={vibeguardLogo} 
+                alt="VibeGuard Logo" 
+                className="w-8 h-8 object-contain"
+              />
             </div>
             <div>
               <h1 className="text-base font-semibold text-vg-text tracking-tight">

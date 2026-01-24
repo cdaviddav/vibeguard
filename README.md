@@ -38,7 +38,7 @@ Get VibeGuard up and running in your project in under 60 seconds.
 ### 1. Install the CLI
 
 ```bash
-npm install -g @vibeguard/cli
+npm install -g @getvibeguard/cli
 ```
 
 ### 2. Initialize Your Project
@@ -115,8 +115,6 @@ VibeGuard operates as a "Shadow Architect" alongside your IDE (Cursor/VS Code):
 
 VibeGuard is built to be "Financially Intelligent." By intelligently routing background tasks (like summarization) to Gemini Flash or GPT-Mini and reserving "Pro" models for complex reasoning, VibeGuard effectively pays for itself.
 
-**Current User Average**: $12.40 Saved / Week compared to brute-force context dumping.
-
 ---
 
 ## 🤝 Community & Feedback
@@ -134,7 +132,7 @@ VibeGuard is in Open Beta. We move fast and break things—help us fix them.
 
 VibeGuard stores keys globally in `~/.vibeguard/config.json`.
 
-**Fix**: Run `getvibeguard init --reconfigure` to re-enter your keys.
+**Fix**: Run `vibeguard init --reconfigure` to re-enter your keys.
 
 **Pro-Tip**: If you prefer environment variables, VibeGuard will prioritize `GOOGLE_API_KEY`, `OPENAI_API_KEY`, or `ANTHROPIC_API_KEY` if they are set in your shell.
 
@@ -149,15 +147,15 @@ If `DIAGRAM.md` shows raw text instead of a chart:
 
 If your "Pulse" dashboard shows a spike in spend:
 
-- **Check your Profile**: You may be on "High-IQ" mode. Switch to "Balanced" or "Economy" using `getvibeguard init` to use Flash models for routine summaries.
+- **Check your Profile**: You may be on "High-IQ" mode. Switch to "Balanced" or "Economy" using `vibeguard init` to use Flash models for routine summaries.
 - **Large Commits**: Avoid staging massive binary files or `node_modules`. VibeGuard respects `.gitignore`, but heavy text files can still consume tokens.
 
 ### "Unknown Command" Errors
 
-If you see `command not found: getvibeguard`:
+If you see `command not found: vibeguard`:
 
 - Ensure you installed it globally: `npm install -g @getvibeguard/cli`.
-- If using `npx`, run `npx getvibeguard@latest <command>`.
+- If using `npx`, run `npx @getvibeguard/cli <command>`.
 
 ---
 
