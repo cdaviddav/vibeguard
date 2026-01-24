@@ -22,7 +22,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 // This resolves to the dashboard/dist folder at the package root
 // when the CLI is running from the dist/ folder.
-export const DASHBOARD_PATH = join(__dirname, '../dashboard/dist');
+export const DASHBOARD_PATH = join(__dirname, '../dist/dashboard');
 
 // Helper to resolve paths relative to the package root
 // This works whether installed via npm or run via npx

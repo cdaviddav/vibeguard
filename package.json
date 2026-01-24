@@ -8,16 +8,15 @@
   "scripts": {
     "build:cli": "tsc",
     "build:dashboard": "npm run build --prefix src/dashboard",
-    "copy:assets": "node scripts/copy-dashboard-for-npm.js",
+    "copy:assets": "node scripts/copy-dashboard.js",
     "build": "npm run build:cli && npm run build:dashboard && npm run copy:assets",
     "prepublishOnly": "npm run build",
     "dev": "tsx src/cli.ts",
     "start": "node dist/cli.js"
   },
   "files": [
-    "dist/",
-    "dashboard/dist/",
-    "templates/"
+    "dist",
+    "bin"
   ],
   "publishConfig": {
     "access": "public"
