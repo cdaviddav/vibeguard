@@ -15,7 +15,7 @@ VibeGuard is a context management application that maintains a high-density "Sin
 - **Validation/Config:** zod, dotenv (Env > .env > Global JSON)
 
 ## Architecture
-VibeGuard operates as a pipeline: Git Watcher/CLI triggers -> Range-based Diff Pre-shredder -> Tiered LLM Summarizer -> Memory Manager -> `PROJECT_MEMORY.md`. The system features an autonomous maintenance loop: a **Heartbeat** service monitors inactivity to trigger **Quiet Reflection** (Oracle analysis), which performs deep project scans (up to 15 levels) to identify architectural drift. These "Prophecies" are visualized in a branded React-based Dashboard via a local Express API and can be resolved via the **AutoFixService**, which manages isolated Git branches and AI-driven refactoring using atomic writes.
+VibeGuard operates as a pipeline: Git Watcher/CLI triggers -> Range-based Diff Pre-shredder -> Tiered LLM Summarizer -> Memory Manager -> `PROJECT_MEMORY.md`. The system is organized into a **Librarian Module** (Watcher, Summarizer, Memory Manager, Heartbeat, Oracle, AutoFix) and a **Persistence Layer** (Git Repo, Memory File, Oracle Store). It features an autonomous maintenance loop: a **Heartbeat** service monitors inactivity to trigger **Quiet Reflection** (Oracle analysis), which performs deep project scans (up to 15 levels) to identify architectural drift. These "Prophecies" are visualized in a branded React-based Dashboard via a local Express API and can be resolved via the **AutoFixService**, which manages isolated Git branches and AI-driven refactoring.
 
 ## Core Rules
 - **Density over Detail:** Never list individual file changes; describe architectural intent and the "why."
@@ -29,6 +29,10 @@ VibeGuard operates as a pipeline: Git Watcher/CLI triggers -> Range-based Diff P
 - **Temporal Awareness:** Always use 2026 for new entries; automatically migrate legacy 2024 references to 2026.
 
 ## Recent Decisions (The "Why")
+- **Hardened system for fresh repositories and missing diagrams (05.02.2026):** Implemented graceful handling for repositories with zero commits and missing `DIAGRAM.md` files. The CLI, Watcher, and Oracle now skip analysis or adjust prompts instead of throwing errors when encountering "Day Zero" states.
+- **Integrated official branding and asset type safety (05.02.2026):** Replaced generic dashboard icons with the VibeGuard shield logo and implemented TypeScript declarations for image assets to ensure build-time safety for static resources.
+- **Standardized CLI distribution and naming (05.02.2026):** Migrated the official npm package to `@getvibeguard/cli`, unified command-line triggers under the `vibeguard` namespace, and optimized the package manifest to include essential documentation for distribution.
+- **Refactored Architectural Diagram for Modular Clarity (05.02.2026):** Overhauled `DIAGRAM.md` to reflect the internal "Librarian Module" service boundaries and updated entity naming (e.g., `MemFile`, `OracleStore`) for better alignment with the codebase and data flow logic.
 - **Bumped Project Version to v1.1.0 (24.01.2026):** Formalized the first minor release of the VibeGuard CLI, consolidating the autonomous maintenance loop, Oracle drift detection, and the premium dashboard into a stable distribution.
 - **Streamlined CLI Boot Sequence (20.01.2026):** Refactored the `init` command to remove legacy ASCII branding and redundant variable declarations, prioritizing a leaner and faster initialization experience.
 - **Refactored Dashboard UI to Bento Grid and Premium Design System (19.01.2026):** Overhauled the visual interface with a modular bento-grid layout and a sophisticated "Librarian/Oracle" aesthetic. Introduced noise textures, ambient mesh gradients, and a unified `vg-` Tailwind prefix. Enhanced Mermaid.js integration with a premium dark theme and fullscreen support, and implemented specialized markdown parsing for memory sections.
@@ -40,9 +44,6 @@ VibeGuard operates as a pipeline: Git Watcher/CLI triggers -> Range-based Diff P
 - **Expanded Documentation for Autonomous Features (18.01.2026):** Updated README and project structure to reflect the addition of Oracle, AutoFix, and Heartbeat services. Formalized configuration schemas for Gemini token limits and global config paths.
 - **Fully Integrated Autonomous Maintenance Loop (18.01.2026):** Connected Heartbeat and AutoFix services to the main watcher lifecycle. The system triggers "Quiet Reflection" via the Oracle after 10 minutes of idle time.
 - **Finalized OracleService Implementation for Architectural Drift Detection (18.01.2026):** Completed core logic for the Oracle, performing deep project scans (15-level depth) using Gemini 3 Pro to identify "prophecies" (Refactor, RuleViolation, Optimization). Implemented state persistence in `.vibeguard/oracle.json`.
-- **Standardized Dashboard Data Fetching via usePulse Hook (18.01.2026):** Centralized prophecy management in a custom hook with 10-second polling. Optimized `ThePulse` component to focus on watcher status and feed orchestration.
-- **Implemented AutoFixService for Programmatic Architectural Drift Resolution (18.01.2026):** Created service to apply fixes to Oracle prophecies via isolated branches (`vibeguard/fix-[id]`). Integrated with Dashboard via `POST /api/fix` with UI triggers and loading states.
-- **Implemented Pulse Feed Component with Branded Styling (18.01.2026):** Developed a notification system (`Pulse.tsx`, `ProphecyCard.tsx`) featuring type-based glow effects (Yellow: Violation, Purple: Refactor, Emerald: Optimization) and Framer Motion animations.
 
 ## Legacy Decisions
 - **Core Infrastructure & Stability (14.01.2026 - 17.01.2026):** Established the initial web dashboard, Pulse feed components, and dual-model LLM strategy (Flash/Pro). Hardened watcher stability against race conditions, implemented range-based diffing, and decoupled memory files from version control. Formalized Cursor protocols and externalized memory compaction.
