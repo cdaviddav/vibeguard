@@ -63,6 +63,11 @@ async function handleWatch() {
       const lastProcessed = await watcher.getLastProcessedCommit();
       const currentHead = await gitUtils.getHeadCommit();
       
+      if (!currentHead) {
+        console.log('No commits found in repository. Skipping commit processing.');
+        return;
+      }
+      
       if (lastProcessed === currentHead) {
         // No new commit, check for unstaged changes as draft memory
         const unstagedDiff = await gitUtils.getUnstagedDiff();
@@ -130,7 +135,10 @@ async function handleWatch() {
   // Initialize watcher state with current HEAD if not set
   const currentHead = await gitUtils.getHeadCommit();
   const lastProcessed = await watcher.getLastProcessedCommit();
-  if (!lastProcessed) {
+  
+  if (!currentHead) {
+    console.log('[VibeGuard] No commits found in repository. Watcher will start monitoring for the first commit.');
+  } else if (!lastProcessed) {
     await watcher.setLastProcessedCommit(currentHead);
   }
 
@@ -556,13 +564,20 @@ async function handleSync(deep: boolean = false) {
       
       await memoryManager.writeMemory(currentMemory);
       const currentHead = await gitUtils.getHeadCommit();
-      await watcher.setLastProcessedCommit(currentHead);
+      if (currentHead) {
+        await watcher.setLastProcessedCommit(currentHead);
+      }
       
       console.log('✅ Deep sync complete!');
     } else {
       // Process latest commit(s)
       const lastProcessed = await watcher.getLastProcessedCommit();
       const currentHead = await gitUtils.getHeadCommit();
+      
+      if (!currentHead) {
+        console.log('No commits found in repository. Nothing to sync.');
+        return;
+      }
       
       if (lastProcessed === currentHead) {
         // No new commit, check for unstaged changes as draft memory
@@ -605,7 +620,9 @@ async function handleSync(deep: boolean = false) {
       const updatedMemory = await summarizer.summarizeDiff(diff, currentMemory, 'flash');
       await memoryManager.writeMemory(updatedMemory);
       
-      await watcher.setLastProcessedCommit(currentHead);
+      if (currentHead) {
+        await watcher.setLastProcessedCommit(currentHead);
+      }
       
       console.log('✅ Sync complete!');
     }

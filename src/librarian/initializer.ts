@@ -166,6 +166,7 @@ export class Initializer {
     }
 
     if (commits.length === 0) {
+      console.log('[VibeGuard] No commits found. This appears to be a fresh repository. Skipping commit analysis.');
       return '';
     }
 

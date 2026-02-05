@@ -53,8 +53,24 @@ export class GitUtils {
    * Get the latest N commits
    */
   async getLatestCommits(count: number): Promise<LogResult['all']> {
-    const log = await this.git.log({ maxCount: count });
-    return [...log.all]; // Convert readonly array to mutable array
+    try {
+      const log = await this.git.log({ maxCount: count });
+      return [...log.all]; // Convert readonly array to mutable array
+    } catch (error: any) {
+      // Handle brand new repositories or repositories with no commits
+      if (
+        error.message?.includes('does not have any commits yet') ||
+        error.message?.includes('not a git repository') ||
+        error.message?.includes('ambiguous argument') ||
+        error.message?.includes('bad revision')
+      ) {
+        // Return empty array for repositories with no commits
+        return [];
+      }
+      
+      // Re-throw other errors
+      throw new Error(`Failed to get latest commits: ${error.message || error}`);
+    }
   }
 
   /**
@@ -174,13 +190,29 @@ export class GitUtils {
 
   /**
    * Get current HEAD commit hash
+   * Returns null if there are no commits in the repository
    */
-  async getHeadCommit(): Promise<string> {
-    const log = await this.git.log({ maxCount: 1 });
-    if (log.latest) {
-      return log.latest.hash;
+  async getHeadCommit(): Promise<string | null> {
+    try {
+      const log = await this.git.log({ maxCount: 1 });
+      if (log.latest) {
+        return log.latest.hash;
+      }
+      return null;
+    } catch (error: any) {
+      // Handle brand new repositories or repositories with no commits
+      if (
+        error.message?.includes('does not have any commits yet') ||
+        error.message?.includes('not a git repository') ||
+        error.message?.includes('ambiguous argument') ||
+        error.message?.includes('bad revision')
+      ) {
+        return null;
+      }
+      
+      // Re-throw other errors
+      throw new Error(`Failed to get HEAD commit: ${error.message || error}`);
     }
-    throw new Error('No commits found in repository');
   }
 
   /**

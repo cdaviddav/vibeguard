@@ -56,6 +56,12 @@ export class Watcher {
   async detectNewCommit(): Promise<string | null> {
     try {
       const currentHead = await this.gitUtils.getHeadCommit();
+      
+      // If there are no commits, return null
+      if (!currentHead) {
+        return null;
+      }
+      
       const state = await this.loadState();
 
       if (state.lastProcessedCommit === currentHead) {

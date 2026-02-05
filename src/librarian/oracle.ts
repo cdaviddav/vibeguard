@@ -122,12 +122,17 @@ export class OracleService {
 
   /**
    * Read DIAGRAM.md
+   * Returns null if the file doesn't exist
    */
-  private async readDiagram(): Promise<string> {
+  private async readDiagram(): Promise<string | null> {
     const diagramPath = path.join(this.repoPath, 'DIAGRAM.md');
     try {
       return await fs.readFile(diagramPath, 'utf-8');
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === 'ENOENT') {
+        // File doesn't exist - return null
+        return null;
+      }
       throw new Error(`Failed to read DIAGRAM.md: ${error}`);
     }
   }
@@ -146,13 +151,19 @@ export class OracleService {
         this.scanProjectTree(),
       ]);
 
+      // Check if DIAGRAM.md is missing
+      if (!diagram) {
+        console.log('[Oracle] DIAGRAM.md not found. Architecture diagram analysis will be skipped.');
+        console.log('[Oracle] Tip: Run `vibeguard visualize` to generate the architecture diagram.');
+      }
+
       // Build the reasoning prompt
       const systemPrompt = `You are an architectural oracle analyzing a codebase for "Architectural Drift" - places where the code has diverged from the intended architecture and rules defined in PROJECT_MEMORY.md.
 
 Your task is to identify 3 specific areas where the code is 'drifting' from the intended architecture. Look for:
 - Violated Core Rules (e.g., using barrel imports when forbidden, not following atomic updates, etc.)
 - Undocumented Tech Stack additions (new libraries/dependencies not mentioned in Tech Stack)
-- Structural deviations from DIAGRAM.md (new components/services not reflected in architecture)
+${diagram ? '- Structural deviations from DIAGRAM.md (new components/services not reflected in architecture)' : '- Structural issues (note: DIAGRAM.md is not available, so focus on PROJECT_MEMORY.md rules)'}
 - Anti-patterns that contradict the Project Soul
 
 Output your findings as a JSON array with exactly 3 objects. Each object must have:
@@ -168,10 +179,10 @@ Format your response as a valid JSON array only. No markdown, no code blocks, ju
       const userPrompt = `PROJECT_MEMORY.md:
 ${projectMemory}
 
-DIAGRAM.md:
+${diagram ? `DIAGRAM.md:
 ${diagram}
 
-Current File Tree:
+` : ''}Current File Tree:
 ${fileTree}
 
 Analyze the above and identify 3 specific areas of architectural drift. Return a JSON array of prophecies.`;
